@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth / Users ────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  username  String   @unique
+  password  String
+  name      String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apartments Apartment[] @relation("AssignedApartments")
+  calls      Call[]
+  reminders  Reminder[]  @relation("AssignedReminders")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// ─── Apartments ───────────────────────────────────────────────────────────────
+
+model Apartment {
+  id          String          @id @default(uuid())
+  title       String
+  source      ApartmentSource @default(MANUAL)
+  sourceUrl   String?
+  price       Float
+  currency    Currency        @default(EUR)
+  city        String
+  district    String?
+  address     String?
+  rooms       Int?
+  area        Float?
+  floor       Int?
+  totalFloors Int?
+  description String?
+  photos      String[]        @default([])
+  status      ApartmentStatus @default(NEW)
+  contactId   String?
+  assigneeId  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  contact   Contact?   @relation(fields: [contactId], references: [id])
+  assignee  User?      @relation("AssignedApartments", fields: [assigneeId], references: [id])
+  calls     Call[]
+  reminders Reminder[]
+
+  tags ApartmentTag[]
+
+  @@index([status])
+  @@index([city])
+  @@index([assigneeId])
+}
+
+enum ApartmentSource {
+  MANUAL
+  LINK
+}
+
+enum ApartmentStatus {
+  NEW
+  ACTIVE
+  CALLBACK
+  VIEWING
+  REJECTED
+  DONE
+}
+
+enum Currency {
+  EUR
+  USD
+  RUB
+  PLN
+}
+
+model ApartmentTag {
+  id         String      @id @default(uuid())
+  name       String      @unique
+  apartments Apartment[]
+}
+
+// ─── Contacts ────────────────────────────────────────────────────────────────
+
+model Contact {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  telegram  String?
+  whatsapp  String?
+  email     String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apartments Apartment[]
+  calls      Call[]
+}
+
+// ─── Calls ───────────────────────────────────────────────────────────────────
+
+model Call {
+  id          String      @id @default(uuid())
+  apartmentId String
+  contactId   String?
+  userId      String
+  calledAt    DateTime    @default(now())
+  durationSec Int?
+  outcome     CallOutcome
+  notes       String?
+  createdAt   DateTime    @default(now())
+
+  apartment Apartment @relation(fields: [apartmentId], references: [id])
+  contact   Contact?  @relation(fields: [contactId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([apartmentId])
+  @@index([userId])
+}
+
+enum CallOutcome {
+  REACHED
+  NO_ANSWER
+  VOICEMAIL
+  BUSY
+  CALLBACK
+}
+
+// ─── Reminders ───────────────────────────────────────────────────────────────
+
+model Reminder {
+  id          String         @id @default(uuid())
+  apartmentId String?
+  title       String
+  dueAt       DateTime
+  status      ReminderStatus @default(PENDING)
+  assigneeId  String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  apartment Apartment? @relation(fields: [apartmentId], references: [id])
+  assignee  User       @relation("AssignedReminders", fields: [assigneeId], references: [id])
+
+  @@index([status])
+  @@index([assigneeId])
+}
+
+enum ReminderStatus {
+  PENDING
+  DONE
+  CANCELED
+}
