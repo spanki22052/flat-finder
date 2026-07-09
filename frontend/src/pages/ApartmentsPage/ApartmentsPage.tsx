@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Table, Tag, Button, Space, Input, Select, Drawer, Form, Modal,
-  message, Popconfirm, Tooltip, Row, Col, Segmented,
+  message, Popconfirm, Tooltip, Row, Col, Segmented, Image,
 } from 'antd';
 import type { TableProps, TableColumnType } from 'antd';
 import {
   PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
-  EyeOutlined, EnvironmentOutlined, LinkOutlined,
+  EyeOutlined, EnvironmentOutlined, LinkOutlined, PhoneOutlined,
+  CameraOutlined,
 } from '@ant-design/icons';
 import { theme } from '../../app/styles/theme';
 import { flatApi } from '../../entities/Flat/utils/api';
@@ -18,14 +19,42 @@ import {
   PageHeader, PageTitle, FiltersRow, SearchInput, GlassCard,
   ApartmentRow, AptThumb, AptInfo, AptTitle, AptMeta, PriceTag, TagPills,
   DrawerStyled, FormSection, SectionTitle, EmptyState,
-  ModeSwitchWrapper, LinkModeHint, ImportButton,
+  ModeSwitchWrapper, LinkModeHint, ImportButton, AddApartmentButton,
   PhotoGrid, PhotoTile, PhotoRemoveBtn, PhotoAddRow, PhotoCounter,
+  TitleButton, SourceLinkButton,
 } from './styled';
 
 const STATUS_COLORS: Record<ApartmentStatus, string> = {
   NEW: '#9FA1FF', ACTIVE: '#34d399', CALLBACK: '#C1EBE9',
   VIEWING: '#D9F9DF', REJECTED: '#fb7185', DONE: '#6b7280',
 };
+
+function HouseIcon() {
+  return (
+    <svg
+      width="56"
+      height="56"
+      viewBox="0 0 64 64"
+      fill="none"
+      stroke={theme.colors.accent.primary}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      style={{ marginBottom: 12, display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
+    >
+      <defs>
+        <linearGradient id="house-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={theme.colors.accent.primary} stopOpacity="0.18" />
+          <stop offset="100%" stopColor={theme.colors.accent.primary} stopOpacity="0.04" />
+        </linearGradient>
+      </defs>
+      <path d="M32 6 6 26v32h18V42h16v16h18V26L32 6Z" fill="url(#house-grad)" />
+      <path d="M32 6 6 26v32h18V42h16v16h18V26L32 6Z" />
+      <path d="M28 58v-6h8v6" />
+    </svg>
+  );
+}
 const STATUS_LABELS: Record<ApartmentStatus, string> = {
   NEW: 'Новая', ACTIVE: 'Активная', CALLBACK: 'Перезвон',
   VIEWING: 'Просмотр', REJECTED: 'Отклонена', DONE: 'Готова',
@@ -70,16 +99,18 @@ function PhotoEditor() {
           <PhotoGrid>
             {photos.map((src, idx) => (
               <PhotoTile key={`${src}-${idx}`}>
-                <img
+                <Image
                   src={src}
                   alt={`Фото ${idx + 1}`}
                   loading="lazy"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.2'; }}
+                  preview={{ mask: <span style={{ fontSize: 12, padding: '0 8px' }}>Увеличить</span> }}
+                  fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
                 <PhotoRemoveBtn
                   type="button"
                   aria-label="Удалить фото"
-                  onClick={() => remove(idx)}
+                  onClick={(e) => { e.stopPropagation(); remove(idx); }}
                 >
                   ×
                 </PhotoRemoveBtn>
@@ -119,7 +150,9 @@ export function ApartmentsPage() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importParsing, setImportParsing] = useState(false);
-  const [form] = Form.useForm<CreateApartmentPayload>();
+  type ApartmentFormValues = Omit<CreateApartmentPayload, 'phones'> & { phones?: string | string[] };
+
+const [form] = Form.useForm<ApartmentFormValues>();
   const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
@@ -150,7 +183,11 @@ export function ApartmentsPage() {
 
   const openEdit = (apt: Apartment) => {
     setEditing(apt);
-    form.setFieldsValue({ ...apt, tags: apt.tags });
+    form.setFieldsValue({
+      ...apt,
+      tags: apt.tags,
+      phones: apt.phones && apt.phones.length > 0 ? apt.phones.join('\n') : '',
+    });
     setMode('form');
     setLinkUrl('');
     setDrawerOpen(true);
@@ -159,11 +196,18 @@ export function ApartmentsPage() {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      const phonesRaw = values.phones;
+      const phones = Array.isArray(phonesRaw)
+        ? phonesRaw
+        : typeof phonesRaw === 'string'
+          ? phonesRaw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+          : undefined;
+      const payload = { ...values, phones };
       if (editing) {
-        await flatApi.update(editing.id, values);
+        await flatApi.update(editing.id, payload);
         message.success('Квартира обновлена');
       } else {
-        await flatApi.create(values);
+        await flatApi.create(payload);
         message.success('Квартира добавлена');
       }
       setDrawerOpen(false);
@@ -198,6 +242,7 @@ export function ApartmentsPage() {
       totalFloors: parsed.totalFloors,
       description: parsed.description,
       photos: parsed.photos,
+      phones: parsed.phones,
     });
     setMode('form');
   };
@@ -261,7 +306,7 @@ export function ApartmentsPage() {
 
   const columns: TableColumnType<Apartment>[] = [
     {
-      title: 'Квартира', dataIndex: 'title', key: 'title', width: '40%',
+      title: 'Квартира', dataIndex: 'title', key: 'title', width: 300,
       render: (title: string, apt) => (
         <ApartmentRow>
           <AptThumb $status={apt.status}>
@@ -272,20 +317,36 @@ export function ApartmentsPage() {
             )}
           </AptThumb>
           <AptInfo>
-            <AptTitle>{title}</AptTitle>
+            <AptTitle>
+              {apt.sourceUrl && (
+                <Tooltip title={`Открыть источник: ${apt.sourceUrl}`}>
+                  <SourceLinkButton
+                    type="button"
+                    aria-label="Открыть источник"
+                    onClick={(e) => { e.stopPropagation(); window.open(apt.sourceUrl, '_blank', 'noopener,noreferrer'); }}
+                  >
+                    <LinkOutlined />
+                  </SourceLinkButton>
+                </Tooltip>
+              )}
+              <TitleButton type="button" onClick={() => openEdit(apt)} title="Редактировать">
+                {title}
+              </TitleButton>
+            </AptTitle>
             <AptMeta>
               <span><EnvironmentOutlined style={{ marginRight: 3 }} />{apt.city}{apt.district ? `, ${apt.district}` : ''}</span>
               {apt.rooms !== undefined && <span>{apt.rooms === 0 ? 'Студия' : `${apt.rooms} ком.`}</span>}
               {apt.area && <span>{apt.area} м²</span>}
               {apt.floor && <span>эт. {apt.floor}/{apt.totalFloors ?? '?'}</span>}
-              {apt.source === 'LINK' && apt.sourceUrl && (
-                <Tooltip title={apt.sourceUrl}>
-                  <LinkOutlined style={{ fontSize: 11, color: '#B5BAFF' }} />
-                </Tooltip>
+              {apt.phones && apt.phones.length > 0 && (
+                <span>
+                  <PhoneOutlined style={{ marginRight: 3 }} />
+                  {apt.phones.join(', ')}
+                </span>
               )}
               {apt.photos && apt.photos.length > 1 && (
                 <Tooltip title={`Фото: ${apt.photos.length}`}>
-                  <span style={{ fontSize: 11, color: '#B5BAFF' }}>📷 {apt.photos.length}</span>
+                  <span style={{ fontSize: 11, color: '#B5BAFF' }}><CameraOutlined /> {apt.photos.length}</span>
                 </Tooltip>
               )}
             </AptMeta>
@@ -346,10 +407,10 @@ export function ApartmentsPage() {
           <ImportButton type="button" onClick={() => setImportModalOpen(true)}>
             <LinkOutlined /> Импорт по ссылке
           </ImportButton>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} size="large"
+          <AddApartmentButton type="primary" icon={<PlusOutlined />} onClick={openCreate} size="large"
             style={{ background: theme.gradients.accent, border: 'none', height: 44, paddingInline: 24 }}>
             Добавить квартиру
-          </Button>
+          </AddApartmentButton>
         </Space>
       </PageHeader>
 
@@ -386,7 +447,7 @@ export function ApartmentsPage() {
             onChange: (p, ps) => { setPage(p); setPageSize(ps); },
           }}
           scroll={{ x: 700 }}
-          locale={{ emptyText: <EmptyState><div style={{ fontSize: 40, marginBottom: 8 }}>🏠</div>Квартиры не найдены</EmptyState> }}
+          locale={{ emptyText: <EmptyState><HouseIcon />Квартиры не найдены</EmptyState> }}
         />
       </GlassCard>
 
@@ -536,6 +597,26 @@ export function ApartmentsPage() {
               </Form.Item>
               <PhotoEditor />
             </FormSection>
+
+            <FormSection>
+              <SectionTitle>Контакты</SectionTitle>
+              <Form.Item name="phones" label="Телефоны (по одному на строку)">
+                <Input.TextArea
+                  rows={2}
+                  placeholder={"+79991234567\n+79997654321"}
+                  onChange={(e) => {
+                    const phones = e.target.value
+                      .split(/\r?\n/)
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                    form.setFieldValue('phones', phones);
+                  }}
+                />
+              </Form.Item>
+            </FormSection>
+
+            <Form.Item name="source" hidden><Input /></Form.Item>
+            <Form.Item name="sourceUrl" hidden><Input /></Form.Item>
           </Form>
         )}
       </DrawerStyled>
@@ -548,7 +629,10 @@ export function ApartmentsPage() {
         okText="Импортировать"
         cancelText="Отмена"
         confirmLoading={importParsing}
-        okButtonProps={{ disabled: !importUrl.trim() }}
+        okButtonProps={{
+          disabled: !importUrl.trim(),
+          style: { background: theme.gradients.accent, border: 'none', color: '#fff' },
+        }}
         destroyOnClose
       >
         <p style={{ color: theme.colors.text.secondary, marginBottom: 12 }}>

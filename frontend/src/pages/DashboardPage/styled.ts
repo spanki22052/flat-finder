@@ -35,7 +35,10 @@ export const BentoGrid = styled.div({
   gridTemplateRows: 'auto',
   gap: 16,
   '@media (max-width: 1200px)': { gridTemplateColumns: 'repeat(2, 1fr)' },
-  '@media (max-width: 640px)': { gridTemplateColumns: '1fr' },
+  '@media (max-width: 640px)': {
+    gridTemplateColumns: '1fr',
+    gap: 12,
+  },
 });
 
 export const StatCard = styled.div<{ $span?: number; $accent?: string; $gradient?: string }>((props) => ({
@@ -67,6 +70,11 @@ export const StatCard = styled.div<{ $span?: number; $accent?: string; $gradient
     background: props.$gradient ?? theme.gradients.card,
     pointerEvents: 'none',
   },
+  '@media (max-width: 640px)': {
+    gridColumn: 'span 1',
+    padding: '18px 16px',
+    borderRadius: theme.radius.lg,
+  },
 }));
 
 export const StatCardIcon = styled.div<{ $color: string }>((props) => ({
@@ -81,6 +89,12 @@ export const StatCardIcon = styled.div<{ $color: string }>((props) => ({
   fontSize: 20,
   color: props.$color,
   marginBottom: 16,
+  '@media (max-width: 640px)': {
+    width: 38,
+    height: 38,
+    fontSize: 18,
+    marginBottom: 12,
+  },
 }));
 
 export const StatValue = styled.div({
@@ -90,6 +104,7 @@ export const StatValue = styled.div({
   lineHeight: 1,
   fontFamily: theme.fonts.mono,
   letterSpacing: '-0.02em',
+  '@media (max-width: 640px)': { fontSize: 28 },
 });
 
 export const StatLabel = styled.div({
@@ -153,7 +168,7 @@ export const AptInfo = styled.div({ flex: 1, minWidth: 0 });
 export const AptTitle = styled.div({
   fontSize: 13,
   fontWeight: 600,
-  color: theme.colors.text.primary,
+  color: theme.colors.text.secondary,
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
@@ -169,7 +184,7 @@ export const AptPrice = styled.div({
   fontSize: 14,
   fontWeight: 700,
   fontFamily: theme.fonts.mono,
-  color: theme.colors.text.primary,
+  color: theme.colors.text.secondary,
   whiteSpace: 'nowrap',
 });
 
@@ -209,7 +224,7 @@ export const ReminderInfo = styled.div({ flex: 1 });
 export const ReminderTitle = styled.div({
   fontSize: 13,
   fontWeight: 600,
-  color: theme.colors.text.primary,
+  color: theme.colors.text.secondary,
 });
 
 export const ReminderTime = styled.div({

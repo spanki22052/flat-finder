@@ -1,9 +1,14 @@
 import React from 'react';
 import { ConfigProvider, App as AntApp } from 'antd';
+import ruRU from 'antd/locale/ru_RU';
+import 'dayjs/locale/ru';
+import dayjs from 'dayjs';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthProvider';
 import { GlobalStyles } from '../styles/GlobalStyles';
+
+dayjs.locale('ru');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +51,8 @@ const antdTheme = {
       borderRadius: 8,
       controlHeight: 40,
       colorBgContainer: '#352f24',
+      colorText: '#FFFFFF',
+      colorTextPlaceholder: 'rgba(255,255,255,0.45)',
       activeBorderColor: '#9FA1FF',
       hoverBorderColor: '#B5BAFF',
     },
@@ -53,6 +60,8 @@ const antdTheme = {
       borderRadius: 8,
       controlHeight: 40,
       colorBgContainer: '#352f24',
+      colorText: '#FFFFFF',
+      colorTextPlaceholder: 'rgba(255,255,255,0.45)',
       optionSelectedBg: 'rgba(159,161,255,0.2)',
     },
     Card: {
@@ -100,11 +109,15 @@ const antdTheme = {
     InputNumber: {
       controlHeight: 40,
       borderRadius: 8,
+      colorText: '#FFFFFF',
+      colorTextPlaceholder: 'rgba(255,255,255,0.45)',
     },
     DatePicker: {
       borderRadius: 8,
       controlHeight: 40,
       colorBgContainer: '#352f24',
+      colorText: '#FFFFFF',
+      colorTextPlaceholder: 'rgba(255,255,255,0.45)',
     },
     Checkbox: {
       borderRadiusSM: 4,
@@ -125,7 +138,7 @@ const antdTheme = {
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={antdTheme}>
+      <ConfigProvider locale={ruRU} theme={antdTheme}>
         <AntApp>
           <BrowserRouter>
             <AuthProvider>

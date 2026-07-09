@@ -18,6 +18,7 @@ export interface Apartment {
   totalFloors?: number;
   description?: string;
   photos?: string[];
+  phones?: string[];
   status: ApartmentStatus;
   tags: string[];
   contactId?: string;
@@ -43,6 +44,7 @@ export interface CreateApartmentPayload {
   totalFloors?: number;
   description?: string;
   photos?: string[];
+  phones?: string[];
   status?: ApartmentStatus;
   contactId?: string;
   tags?: string[];
@@ -83,4 +85,5 @@ export interface ParsedApartment {
   totalFloors?: number;
   description?: string;
   photos?: string[];
+  phones?: string[];
 }

@@ -127,11 +127,25 @@ export function extractNextData(html: string): Record<string, unknown> | null {
     /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i,
     /window\.__NEXT_DATA__\s*=\s*(\{[\s\S]*?\});?\s*<\/script>/i,
     /<script[^>]*id=["']__NUXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i,
+    // Avito __preloadedState__
+    /window\.__preloadedState__\s*=\s*"((?:[^"\\]|\\.)*)"[,;]/i,
   ];
   for (const re of patterns) {
     const m = re.exec(html);
     if (!m) continue;
     try {
+      // Если captured group содержит JSON-строку в кавычках (Avito style)
+      let jsonStr = m[1];
+      if (jsonStr) {
+        // Экранированные символы: \uXXXX, \n, \", \\
+        jsonStr = jsonStr
+          .replace(/\\u([0-9a-fA-F]{4})/g, (_, code) => String.fromCharCode(parseInt(code, 16)))
+          .replace(/\\n/g, '\n')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\');
+        const parsed = JSON.parse(jsonStr);
+        if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown>;
+      }
       const parsed = JSON.parse(m[1]);
       if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown>;
     } catch {

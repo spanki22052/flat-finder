@@ -27,7 +27,7 @@ export const GlassCard = styled.div({
   background: theme.colors.bg.card,
   backdropFilter: 'blur(16px)',
   border: `1px solid ${theme.colors.bg.glassBorder}`,
-  borderRadius: theme.radius.xl,
+  borderRadius: theme.radius.sm,
   overflow: 'hidden',
   boxShadow: theme.shadows.card,
 });
@@ -88,14 +88,19 @@ export const DueBadge = styled.div<{ $overdue: boolean }>((props) => ({
 }));
 
 export const EmptyState = styled.div({
-  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
   padding: '60px 20px',
   color: theme.colors.text.muted,
+  textAlign: 'center',
 });
 
 export const CountBadge = styled.div({
   fontSize: 13,
   fontWeight: 600,
   color: theme.colors.text.secondary,
+  padding: '12px 24px',
   marginBottom: 8,
 });

@@ -29,31 +29,6 @@ export interface Contact {
   updatedAt: string;
 }
 
-// ─── Calls ──────────────────────────────────────────────────────────────────
-export type CallOutcome = 'REACHED' | 'NO_ANSWER' | 'VOICEMAIL' | 'BUSY' | 'CALLBACK';
-
-export interface Call {
-  id: string;
-  apartmentId: string;
-  contactId?: string;
-  userId: string;
-  calledAt: string;
-  durationSec?: number;
-  outcome: CallOutcome;
-  notes?: string;
-  createdAt: string;
-  apartment?: { id: string; title: string; city: string };
-  contact?: { id: string; name: string };
-}
-
-export interface CreateCallPayload {
-  apartmentId: string;
-  contactId?: string;
-  durationSec?: number;
-  outcome: CallOutcome;
-  notes?: string;
-}
-
 // ─── Reminders ─────────────────────────────────────────────────────────────
 export type ReminderStatus = 'PENDING' | 'DONE' | 'CANCELED';
 

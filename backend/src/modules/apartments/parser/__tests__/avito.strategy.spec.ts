@@ -22,10 +22,17 @@ describe('AvitoParser helpers', () => {
   });
 
   it('parseCity takes first comma-separated part', () => {
-    const fn = (parser as unknown as { parseCity?: (a: string | null, b: string | null) => string | null }).parseCity;
+    const fn = (parser as unknown as { parseCity?: (a: string | null, b: string | null, u?: string) => string | null }).parseCity;
     expect(fn?.('Москва, Тверская', null)).toBe('Москва');
     expect(fn?.(null, 'Санкт-Петербург, Невский')).toBe('Санкт-Петербург');
     expect(fn?.(null, null)).toBeNull();
+  });
+
+  it('parseCity falls back to URL slug (tyumen → Тюмень)', () => {
+    const fn = (parser as unknown as { parseCity?: (a: string | null, b: string | null, u?: string) => string | null }).parseCity;
+    expect(fn?.(null, null, 'https://www.avito.ru/tyumen/kvartiry/1-k._kvartira_50_m_516_et._7626114474'))
+      .toBe('Тюмень');
+    expect(fn?.(null, null, 'https://www.avito.ru/moskva/kvartiry/123')).toBe('Москва');
   });
 
   it('findParamNumber extracts numeric params', () => {

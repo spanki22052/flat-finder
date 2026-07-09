@@ -2,7 +2,6 @@ import { apiClient } from '@/shared/api/client';
 import type {
   User, AuthResponse,
   Contact,
-  Call, CreateCallPayload,
   Reminder, CreateReminderPayload, UpdateReminderPayload,
   ApiResponse,
 } from './types';
@@ -26,17 +25,6 @@ export const contactsApi = {
     apiClient.patch<ApiResponse<Contact>>(`/contacts/${id}`, payload),
   delete: (id: string) =>
     apiClient.delete(`/contacts/${id}`),
-};
-
-export const callsApi = {
-  list: (params?: Record<string, string | number>) =>
-    apiClient.get<ApiResponse<Call[]> & { meta: { page: number; pageSize: number; total: number } }>(
-      `/calls${params ? '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString() : ''}`
-    ),
-  create: (payload: CreateCallPayload) =>
-    apiClient.post<ApiResponse<Call>>('/calls', payload),
-  delete: (id: string) =>
-    apiClient.delete(`/calls/${id}`),
 };
 
 export const remindersApi = {

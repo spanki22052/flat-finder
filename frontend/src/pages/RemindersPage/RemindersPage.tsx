@@ -1,9 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  Button, Space, Select, Modal, Form, Input, DatePicker,
+  Button, Space, Select, Modal, Form, Input, DatePicker, TimePicker,
   message, Popconfirm, Tag,
 } from 'antd';
-import { PlusOutlined, CheckOutlined, DeleteOutlined, BellOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined, CheckOutlined, DeleteOutlined, BellOutlined,
+  ClockCircleOutlined, CalendarOutlined, HomeOutlined, WarningOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ru';
@@ -49,9 +53,20 @@ export function RemindersPage() {
   const handleCreate = async () => {
     try {
       const vals = await form.validateFields();
+      const { dueDate, dueTime, ...rest } = vals as {
+        dueDate?: dayjs.Dayjs;
+        dueTime?: dayjs.Dayjs;
+      } & Omit<CreateReminderPayload, 'dueAt'>;
+      const time = dueTime ?? dayjs().hour(9).minute(0);
+      const dueAt = (dueDate ?? dayjs())
+        .hour(time.hour())
+        .minute(time.minute())
+        .second(0)
+        .millisecond(0)
+        .toISOString();
       await remindersApi.create({
-        ...vals,
-        dueAt: (vals.dueAt as dayjs.Dayjs).toISOString(),
+        ...rest,
+        dueAt,
       });
       message.success('Напоминание создано');
       setModalOpen(false);
@@ -106,14 +121,20 @@ export function RemindersPage() {
             const overdue = new Date(r.dueAt) < new Date();
             return (
               <ReminderItem key={r.id} $done={false}>
-                <ReminderIcon $done={false}>⏰</ReminderIcon>
+                <ReminderIcon $done={false}><ClockCircleOutlined /></ReminderIcon>
                 <ReminderInfo>
                   <ReminderTitle $done={false}>{r.title}</ReminderTitle>
                   <ReminderMeta>
                     <DueBadge $overdue={overdue}>
-                      {overdue ? '⚠️ Просрочено' : '📅'} {dayjs(r.dueAt).format('D MMM YYYY, HH:mm')}
+                      {overdue
+                        ? <><WarningOutlined /> Просрочено</>
+                        : <><CalendarOutlined /> {dayjs(r.dueAt).format('D MMM YYYY, HH:mm')}</>}
                     </DueBadge>
-                    {r.apartment && <span>🏠 {r.apartment.title}</span>}
+                    {r.apartment && (
+                      <Link to={`/apartments/${r.apartment.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                        <HomeOutlined /> {r.apartment.title}
+                      </Link>
+                    )}
                   </ReminderMeta>
                 </ReminderInfo>
                 <Space>
@@ -158,7 +179,20 @@ export function RemindersPage() {
       {!loading && data.length === 0 && (
         <GlassCard>
           <EmptyState>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🔔</div>
+            <div
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'radial-gradient(circle, rgba(159,161,255,0.18), rgba(159,161,255,0.04))',
+                marginBottom: 16,
+              }}
+            >
+              <BellOutlined style={{ fontSize: 44, color: theme.colors.accent.primary }} />
+            </div>
             Нет напоминаний
           </EmptyState>
         </GlassCard>
@@ -176,8 +210,21 @@ export function RemindersPage() {
           <Form.Item name="title" label="Что сделать" rules={[{ required: true, message: 'Введите название' }]}>
             <Input placeholder="Позвонить по квартире на Тверской" />
           </Form.Item>
-          <Form.Item name="dueAt" label="Когда" rules={[{ required: true, message: 'Выберите дату' }]}>
-            <DatePicker showTime style={{ width: '100%' }} />
+          <Form.Item name="dueDate" label="Дата" rules={[{ required: true, message: 'Выберите дату' }]}>
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="dueTime"
+            label="Время"
+            initialValue={dayjs().hour(9).minute(0)}
+            rules={[{ required: true, message: 'Выберите время' }]}
+          >
+            <TimePicker
+              format="HH:mm"
+              minuteStep={5}
+              allowClear={false}
+              style={{ width: '100%' }}
+            />
           </Form.Item>
           <Form.Item name="apartmentId" label="Квартира (опционально)">
             <Input placeholder="uuid квартиры" />

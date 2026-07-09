@@ -4,6 +4,7 @@ import type { Currency } from '@prisma/client';
 import { BaseListingParser, ParsedListing } from './base.strategy.js';
 import { ParserInvalidPageError } from './cian.strategy.js';
 import { randomUserAgent } from '../utils/user-agents.js';
+import { extractPhones } from '../utils/phones.js';
 
 @Injectable()
 export class DomClickParser extends BaseListingParser {
@@ -84,6 +85,8 @@ export class DomClickParser extends BaseListingParser {
     if (!name || !city || price == null) return null;
 
     const photos = this.extractPhotos(data);
+    const description = typeof data.description === 'string' ? data.description : undefined;
+    const phones = extractPhones(description);
 
     return {
       source: 'LINK',
@@ -93,8 +96,9 @@ export class DomClickParser extends BaseListingParser {
       currency: this.normalizeCurrency(currency),
       city,
       address: typeof address?.streetAddress === 'string' ? address.streetAddress : undefined,
-      description: typeof data.description === 'string' ? data.description : undefined,
+      description,
       ...(photos ? { photos } : {}),
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 

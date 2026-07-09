@@ -56,6 +56,7 @@ Entity:
   totalFloors?: number
   description?: string
   photos?: string[]
+  phones?: string[]
   status: "NEW" | "ACTIVE" | "CALLBACK" | "VIEWING" | "REJECTED" | "DONE"
   tags: string[]            // tag names
   contactId?: string
@@ -72,6 +73,7 @@ Endpoints:
 - `POST /apartments` — body `CreateApartmentDto` (subset of entity, excludes `id/timestamps`).
 - `PATCH /apartments/:id` — body `UpdateApartmentDto` (partial).
 - `DELETE /apartments/:id`.
+- `GET /apartments/:id/next-reminder` — возвращает ближайшее `PENDING` напоминание, привязанное к квартире, у которого `dueAt >= now()`. Ответ: `{ data: Reminder | null }` (полная форма Reminder; `null` если ничего не запланировано).
 - `POST /apartments/parse-link` — body `{ url: string }`. Парсит объявление с поддерживаемого источника и возвращает поля для префилла формы (см. секцию [Parse Link](#parse-link)).
 
 ## Tags & Statuses
@@ -88,18 +90,6 @@ Endpoints:
 ```
 
 - `GET /contacts`, `GET /contacts/:id`, `POST /contacts`, `PATCH /contacts/:id`, `DELETE /contacts/:id`.
-
-## Calls
-
-```
-{
-  id, apartmentId, contactId?, userId, calledAt, durationSec?, outcome: "REACHED" | "NO_ANSWER" | "VOICEMAIL" | "BUSY" | "CALLBACK",
-  notes?, createdAt
-}
-```
-
-- `GET /calls` — supports `apartmentId`, `userId`, `from`, `to`, `page`, `pageSize`.
-- `POST /calls`, `PATCH /calls/:id`, `DELETE /calls/:id`.
 
 ## Reminders
 
@@ -151,7 +141,8 @@ POST /apartments/parse-link
     "floor": 5,
     "totalFloors": 9,
     "description": "Светлая квартира с ремонтом",
-    "photos": ["https://cdn.cian.ru/photo1.jpg"]
+    "photos": ["https://cdn.cian.ru/photo1.jpg"],
+    "phones": ["+79991234567"]
   }
 }
 ```
@@ -174,6 +165,8 @@ UI flow:
 4. Юзер правит и нажимает "Создать" (или "Сохранить").
 
 При создании квартиры фронт должен проставить `source: 'LINK'` и `sourceUrl`, чтобы в БД сохранилось происхождение объявления.
+
+Парсер пытается извлечь телефон(ы) из `description` страницы (российские форматы `+7…` / `8…`); найденные номера возвращаются в `phones`, нормализованные к виду `+7XXXXXXXXXX`.
 
 ## Versioning
 

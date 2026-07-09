@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Input, Drawer } from 'antd';
+import { Input, Drawer, Button } from 'antd';
 import { theme } from '../../app/styles/theme';
 
 export const PageHeader = styled.div({
@@ -33,6 +33,17 @@ export const SearchInput = styled(Input)({
   },
 });
 
+export const ACTION_COL_BG = `
+  linear-gradient(180deg,
+    rgba(168,170,255,0.08) 0%,
+    rgba(193,235,233,0.06) 100%
+  ),
+  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><defs><pattern id='p' width='20' height='20' patternUnits='userSpaceOnUse'><circle cx='1.5' cy='1.5' r='1' fill='%23A8AAFF' fill-opacity='0.06'/></pattern></defs><rect width='100%25' height='100%25' fill='url(%23p)'/></svg>"),
+  linear-gradient(135deg, #3c3128 0%, #2a2218 100%)
+`.replace(/\s+/g, ' ').trim();
+
+export const ACTION_COL_BG_HOVER = ACTION_COL_BG;
+
 export const GlassCard = styled.div({
   background: theme.colors.bg.card,
   backdropFilter: 'blur(16px)',
@@ -40,6 +51,29 @@ export const GlassCard = styled.div({
   borderRadius: theme.radius.xl,
   overflow: 'hidden',
   boxShadow: theme.shadows.card,
+  '.ant-table-cell-fix-right, .ant-table-cell-fix-right-first': {
+    zIndex: 5,
+    background: `${ACTION_COL_BG} !important`,
+    backgroundColor: `${theme.colors.bg.deep} !important`,
+    '&::before': {
+      background: `${ACTION_COL_BG} !important`,
+    },
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 2,
+      background: `linear-gradient(180deg, ${theme.colors.accent.primary}, ${theme.colors.accent.secondary})`,
+      opacity: 0.6,
+      pointerEvents: 'none',
+    },
+  },
+  '.ant-table-thead > tr > th.ant-table-cell-fix-right': {
+    background: `${ACTION_COL_BG} !important`,
+    backgroundColor: `${theme.colors.bg.deep} !important`,
+  },
 });
 
 export const ApartmentRow = styled.div({
@@ -47,6 +81,9 @@ export const ApartmentRow = styled.div({
   alignItems: 'center',
   gap: 12,
   padding: '4px 0',
+  '@media (max-width: 640px)': {
+    gap: 8,
+  },
 });
 
 export const AptThumb = styled.div<{ $status: string }>((props) => ({
@@ -60,6 +97,12 @@ export const AptThumb = styled.div<{ $status: string }>((props) => ({
   alignItems: 'center',
   justifyContent: 'center',
   fontSize: 18,
+  '@media (max-width: 640px)': {
+    width: 36,
+    height: 36,
+    fontSize: 15,
+    borderRadius: 8,
+  },
 }));
 
 export const AptInfo = styled.div({ flex: 1, minWidth: 0 });
@@ -67,10 +110,61 @@ export const AptInfo = styled.div({ flex: 1, minWidth: 0 });
 export const AptTitle = styled.div({
   fontSize: 14,
   fontWeight: 600,
-  color: theme.colors.text.inverse,
+  color: theme.colors.text.muted,
+  whiteSpace: 'nowrap',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  minWidth: 0,
+  '@media (max-width: 640px)': {
+    fontSize: 13,
+  },
+});
+
+export const TitleButton = styled.button({
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  fontSize: 14,
+  fontWeight: 600,
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+  cursor: 'pointer',
+  textAlign: 'left',
+  flex: 1,
+  minWidth: 0,
+  borderRadius: 4,
+  transition: 'color 0.15s ease, background 0.15s ease',
+  '&:hover': {
+    color: '#B5BAFF',
+    background: 'rgba(159,161,255,0.08)',
+  },
+  '@media (max-width: 640px)': {
+    fontSize: 13,
+  },
+});
+
+export const SourceLinkButton = styled.button({
+  background: 'transparent',
+  border: 'none',
+  padding: '2px 4px',
+  cursor: 'pointer',
+  color: '#B5BAFF',
+  fontSize: 12,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 4,
+  flexShrink: 0,
+  transition: 'background 0.15s ease, color 0.15s ease',
+  '&:hover': {
+    background: 'rgba(159,161,255,0.18)',
+    color: '#fff',
+  },
 });
 
 export const AptMeta = styled.div({
@@ -80,20 +174,29 @@ export const AptMeta = styled.div({
   display: 'flex',
   gap: 8,
   flexWrap: 'wrap',
+  '@media (max-width: 640px)': {
+    fontSize: 11,
+    gap: 6,
+  },
 });
 
 export const PriceTag = styled.div({
   fontSize: 15,
   fontWeight: 700,
   fontFamily: theme.fonts.mono,
-  color: theme.colors.text.inverse,
+  color: theme.colors.text.muted,
   whiteSpace: 'nowrap',
+  '@media (max-width: 640px)': {
+    fontSize: 13,
+  },
 });
 
 export const TagPills = styled.div({
   display: 'flex',
   gap: 4,
   flexWrap: 'wrap',
+  maxWidth: '100%',
+  overflow: 'hidden',
 });
 
 export const DrawerStyled = styled(Drawer)({
@@ -172,6 +275,22 @@ export const ImportButton = styled.button({
   },
   '&:active': {
     transform: 'translateY(1px)',
+  },
+  '@media (max-width: 640px)': {
+    height: 36,
+    padding: '0 12px',
+    fontSize: 12,
+    gap: 6,
+    borderRadius: 10,
+  },
+});
+
+export const AddApartmentButton = styled(Button)({
+  '@media (max-width: 640px)': {
+    height: 36,
+    paddingInline: 12,
+    fontSize: 12,
+    borderRadius: 10,
   },
 });
 

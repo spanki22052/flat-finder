@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { NavLink } from 'react-router-dom';
 import { theme } from '../../app/styles/theme';
 
 export const LayoutWrapper = styled.div({
@@ -6,14 +7,14 @@ export const LayoutWrapper = styled.div({
   minHeight: '100vh',
 });
 
-export const MainArea = styled.div({
-  marginLeft: 240,
+export const MainArea = styled.div<{ $isMobile?: boolean }>((props) => ({
   transition: 'margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
   minHeight: '100vh',
   position: 'relative',
   zIndex: 1,
+  marginLeft: props.$isMobile ? 0 : 240,
   [`@media (max-width: ${theme.breakpoints.md})`]: { marginLeft: 0 },
-});
+}));
 
 export const TopBar = styled.header({
   position: 'sticky',
@@ -51,4 +52,58 @@ export const PageContent = styled.main({
   margin: '0 auto',
   width: '100%',
   [`@media (max-width: ${theme.breakpoints.sm})`]: { padding: 16 },
+  [`@media (max-width: ${theme.breakpoints.md})`]: { paddingBottom: 96 },
+});
+
+export const BottomBar = styled.nav({
+  display: 'none',
+  [`@media (max-width: ${theme.breakpoints.md})`]: {
+    display: 'flex',
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+    height: 64,
+    paddingBottom: 'env(safe-area-inset-bottom, 0)',
+    alignItems: 'stretch',
+    justifyContent: 'space-around',
+    background: 'rgba(42, 35, 24, 0.92)',
+    backdropFilter: 'blur(18px)',
+    WebkitBackdropFilter: 'blur(18px)',
+    borderTop: `1px solid ${theme.colors.bg.glassBorder}`,
+    boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.35)',
+  },
+});
+
+export const BottomItem = styled(NavLink)({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 2,
+  padding: '6px 4px',
+  textDecoration: 'none',
+  color: theme.colors.text.muted,
+  transition: theme.transition,
+  '& .bottom-icon': {
+    fontSize: 20,
+    lineHeight: 1,
+    transition: theme.transition,
+  },
+  '&:hover': { color: theme.colors.text.secondary },
+  '&.active': {
+    color: theme.colors.accent.primary,
+    '& .bottom-icon': {
+      transform: 'translateY(-2px)',
+      filter: `drop-shadow(0 0 6px ${theme.colors.accent.primary}80)`,
+    },
+  },
+});
+
+export const BottomLabel = styled.span({
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.01em',
 });

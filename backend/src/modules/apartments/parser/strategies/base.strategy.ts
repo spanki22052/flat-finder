@@ -15,6 +15,7 @@ export interface ParsedListing {
   totalFloors?: number;
   description?: string;
   photos?: string[];
+  phones?: string[];
 }
 
 export abstract class BaseListingParser {

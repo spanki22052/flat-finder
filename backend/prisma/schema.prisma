@@ -23,7 +23,6 @@ model User {
   updatedAt DateTime @updatedAt
 
   apartments Apartment[] @relation("AssignedApartments")
-  calls      Call[]
   reminders  Reminder[]  @relation("AssignedReminders")
 }
 
@@ -50,6 +49,7 @@ model Apartment {
   totalFloors Int?
   description String?
   photos      String[]        @default([])
+  phones      String[]        @default([])
   status      ApartmentStatus @default(NEW)
   contactId   String?
   assigneeId  String?
@@ -58,7 +58,6 @@ model Apartment {
 
   contact   Contact?   @relation(fields: [contactId], references: [id])
   assignee  User?      @relation("AssignedApartments", fields: [assigneeId], references: [id])
-  calls     Call[]
   reminders Reminder[]
 
   tags ApartmentTag[]
@@ -109,36 +108,6 @@ model Contact {
   updatedAt DateTime @updatedAt
 
   apartments Apartment[]
-  calls      Call[]
-}
-
-// ─── Calls ───────────────────────────────────────────────────────────────────
-
-model Call {
-  id          String      @id @default(uuid())
-  apartmentId String
-  contactId   String?
-  userId      String
-  calledAt    DateTime    @default(now())
-  durationSec Int?
-  outcome     CallOutcome
-  notes       String?
-  createdAt   DateTime    @default(now())
-
-  apartment Apartment @relation(fields: [apartmentId], references: [id])
-  contact   Contact?  @relation(fields: [contactId], references: [id])
-  user      User      @relation(fields: [userId], references: [id])
-
-  @@index([apartmentId])
-  @@index([userId])
-}
-
-enum CallOutcome {
-  REACHED
-  NO_ANSWER
-  VOICEMAIL
-  BUSY
-  CALLBACK
 }
 
 // ─── Reminders ───────────────────────────────────────────────────────────────

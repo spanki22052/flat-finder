@@ -8,6 +8,7 @@ import {
   extractInlineConfig, extractJsonLd, extractNextData, getNumber, getString,
   lightFetch, looksBlocked, normalizeCurrency,
 } from '../utils/light-fetch.js';
+import { extractPhones } from '../utils/phones.js';
 
 @Injectable()
 export class YandexRealtyParser extends BaseListingParser {
@@ -199,6 +200,8 @@ export class YandexRealtyParser extends BaseListingParser {
     const floor = getNumber(offer, ['floor', 'value']) ?? getNumber(offer, ['floor']);
     const totalFloors = getNumber(offer, ['floorsOffered']) ?? getNumber(offer, ['floorsTotal']);
 
+    const phones = extractPhones(description);
+
     if (!title || price == null || !city) return null;
 
     return {
@@ -214,6 +217,7 @@ export class YandexRealtyParser extends BaseListingParser {
       ...(area !== undefined ? { area } : {}),
       ...(floor !== undefined ? { floor } : {}),
       ...(totalFloors !== undefined ? { totalFloors } : {}),
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 
@@ -284,6 +288,8 @@ export class YandexRealtyParser extends BaseListingParser {
       throw new ParserInvalidPageError('Yandex: не удалось разобрать страницу');
     }
 
+    const phones = extractPhones(data.description);
+
     return {
       source: 'LINK',
       sourceUrl,
@@ -298,6 +304,7 @@ export class YandexRealtyParser extends BaseListingParser {
       floor,
       totalFloors,
       photos: data.photos.length > 0 ? data.photos : undefined,
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 }

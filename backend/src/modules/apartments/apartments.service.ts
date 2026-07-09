@@ -10,12 +10,19 @@ const APARTMENT_SELECT = {
   id: true, title: true, source: true, sourceUrl: true, price: true,
   currency: true, city: true, district: true, address: true,
   rooms: true, area: true, floor: true, totalFloors: true,
-  description: true, photos: true, status: true,
+  description: true, photos: true, phones: true, status: true,
   contactId: true, assigneeId: true, createdAt: true, updatedAt: true,
   tags: { select: { name: true } },
   contact: { select: { id: true, name: true, phone: true } },
   assignee: { select: { id: true, name: true } },
 } satisfies Prisma.ApartmentSelect;
+
+const REMINDER_SELECT = {
+  id: true, apartmentId: true, title: true, dueAt: true,
+  status: true, assigneeId: true, createdAt: true, updatedAt: true,
+  apartment: { select: { id: true, title: true, city: true } },
+  assignee: { select: { id: true, name: true } },
+} as const;
 
 @Injectable()
 export class ApartmentsService {
@@ -67,6 +74,19 @@ export class ApartmentsService {
     });
     if (!apartment) throw new NotFoundException('Apartment not found');
     return { ...apartment, tags: apartment.tags.map((t) => t.name) };
+  }
+
+  async getNextReminder(id: string) {
+    await this.findOne(id);
+    return this.prisma.reminder.findFirst({
+      where: {
+        apartmentId: id,
+        status: 'PENDING',
+        dueAt: { gte: new Date() },
+      },
+      orderBy: { dueAt: 'asc' },
+      select: REMINDER_SELECT,
+    });
   }
 
   async create(dto: CreateApartmentDto, userId: string) {

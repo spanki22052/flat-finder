@@ -3,25 +3,25 @@
 export const theme = {
   colors: {
     bg: {
-      deep:     '#1a1510',
-      base:     '#2a2318',
-      card:     'rgba(40, 35, 25, 0.72)',
-      cardHover:'rgba(50, 45, 30, 0.88)',
-      glass:    'rgba(255, 238, 214, 0.04)',
-      glassBorder: 'rgba(255, 238, 214, 0.09)',
+      deep:     '#2a2218',
+      base:     '#3c3128',
+      card:     'rgba(60, 51, 40, 0.78)',
+      cardHover:'rgba(78, 66, 50, 0.92)',
+      glass:    'rgba(255, 238, 214, 0.06)',
+      glassBorder: 'rgba(255, 238, 214, 0.16)',
     },
     accent: {
-      primary:     '#9FA1FF',  // фиолетовый
-      primaryLight:'#B5BAFF',  // светло-фиолетовый
+      primary:     '#A8AAFF',  // фиолетовый
+      primaryLight:'#C5C8FF',  // светло-фиолетовый
       secondary:   '#C1EBE9',  // мятный
       tertiary:    '#D9F9DF',  // светло-зелёный
       highlight:   '#FFEED6',  // светло-бежевый (оставлен для инверсии текста)
     },
     text: {
-      primary:  '#1a1510',
-      secondary:'#5a4d3a',
-      muted:    '#8a7d68',
-      inverse:  '#FFEED6',
+      primary:  '#D6CCB8',
+      secondary:'#D6CCB8',
+      muted:    '#B3A78F',
+      inverse:  '#FFFAF0',
     },
     status: {
       NEW:      '#9FA1FF',
@@ -50,9 +50,9 @@ export const theme = {
     full: '9999px',
   },
   shadows: {
-    card:  '0 4px 24px rgba(0,0,0,0.4), 0 1px 0 rgba(159,161,255,0.05) inset',
-    glow:  '0 0 20px rgba(159,161,255,0.3)',
-    glowSecondary: '0 0 20px rgba(193,235,233,0.3)',
+    card:  '0 4px 24px rgba(0,0,0,0.35), 0 1px 0 rgba(168,170,255,0.08) inset',
+    glow:  '0 0 20px rgba(168,170,255,0.35)',
+    glowSecondary: '0 0 20px rgba(193,235,233,0.35)',
   },
   fonts: {
     sans: "'Inter', system-ui, sans-serif",

@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Badge, Tag, Spin } from 'antd';
+import { Tag, Spin } from 'antd';
 import {
-  HomeOutlined, ClockCircleOutlined, PhoneOutlined,
-  ArrowUpOutlined, ArrowDownOutlined,
+  HomeOutlined, ClockCircleOutlined,
+  ArrowUpOutlined, ArrowDownOutlined, RiseOutlined,
 } from '@ant-design/icons';
 import { theme } from '../../app/styles/theme';
-import { callsApi, remindersApi } from '../../shared/api/endpoints';
+import { remindersApi } from '../../shared/api/endpoints';
 import { flatApi } from '../../entities/Flat/utils/api';
 import type { ApartmentStatus } from '../../entities/Flat/model/types';
-import type { Call, Reminder } from '../../shared/api/types';
+import type { Reminder } from '../../shared/api/types';
 import {
   PageWrap, PageTitle, PageSubtitle, BentoGrid,
   StatCard, StatCardIcon, StatValue, StatLabel, StatTrend, CardTitle,
@@ -86,20 +85,17 @@ function StatCardWidget({
 export function DashboardPage() {
   const [apartments, setApartments] = useState<import('../../entities/Flat/model/types').Apartment[]>([]);
   const [total, setTotal] = useState(0);
-  const [calls, setCalls] = useState<Call[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       flatApi.getList({ pageSize: 5 }),
-      callsApi.list({ pageSize: 5 }),
       remindersApi.list({ status: 'PENDING' }),
     ])
-      .then(([aptRes, callsRes, remRes]) => {
+      .then(([aptRes, remRes]) => {
         setApartments(aptRes.data);
         setTotal(aptRes.meta.total);
-        setCalls(callsRes.data.data);
         setReminders(remRes.data.data.slice(0, 5));
       })
       .catch(console.error)
@@ -137,7 +133,7 @@ export function DashboardPage() {
           delay={0.05}
         />
         <StatCardWidget
-          icon={<Badge status="processing" />}
+          icon={<RiseOutlined />}
           value={activeCount}
           label="В работе"
           accent="#34d399"
@@ -145,17 +141,10 @@ export function DashboardPage() {
           delay={0.1}
         />
         <StatCardWidget
-          icon={<PhoneOutlined />}
-          value={calls.length}
-          label="Звонков"
-          accent="#C1EBE9"
-          delay={0.15}
-        />
-        <StatCardWidget
           icon={<ClockCircleOutlined />}
           value={reminders.length}
           label="Активных напоминаний"
-          accent="#D9F9DF"
+          accent="#C1EBE9"
           delay={0.2}
         />
 
@@ -171,7 +160,13 @@ export function DashboardPage() {
             <AptList>
               {apartments.slice(0, 4).map((a) => (
                 <AptCard key={a.id} to={`/apartments/${a.id}`}>
-                  <AptThumb $color={STATUS_COLORS[a.status]}>🏠</AptThumb>
+                  <AptThumb $color={STATUS_COLORS[a.status]} aria-hidden>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STATUS_COLORS[a.status]} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 11.5 12 4l9 7.5" />
+                      <path d="M5 10.5V20h14v-9.5" />
+                      <path d="M10 20v-5h4v5" />
+                    </svg>
+                  </AptThumb>
                   <AptInfo>
                     <AptTitle>{a.title}</AptTitle>
                     <AptMeta>{a.city}{a.district ? ` · ${a.district}` : ''}</AptMeta>

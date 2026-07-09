@@ -4,7 +4,6 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { ApartmentsModule } from './modules/apartments/apartments.module.js';
 import { ContactsModule } from './modules/contacts/contacts.module.js';
-import { CallsModule } from './modules/calls/calls.module.js';
 import { RemindersModule } from './modules/reminders/reminders.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
@@ -16,7 +15,6 @@ import { PrismaModule } from './prisma/prisma.module.js';
     UsersModule,
     ApartmentsModule,
     ContactsModule,
-    CallsModule,
     RemindersModule,
   ],
 })

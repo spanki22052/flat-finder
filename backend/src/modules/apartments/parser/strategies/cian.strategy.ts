@@ -11,6 +11,7 @@ import {
   decodeEntities, extractAreaFromText, extractFloorFromTitle, extractRoomsFromText,
   htmlTitle, inferCityFromUrl, matchMeta, parsePriceFromText,
 } from '../utils/meta-parse.js';
+import { extractPhones } from '../utils/phones.js';
 
 export class ParserBlockedError extends Error {
   constructor(message: string) { super(message); this.name = 'ParserBlockedError'; }
@@ -172,6 +173,7 @@ export class CianParser extends BaseListingParser {
     }
 
     const description = typeof data.description === 'string' ? data.description : undefined;
+    const phones = extractPhones(description);
 
     if (!name || price == null) return null;
 
@@ -190,6 +192,7 @@ export class CianParser extends BaseListingParser {
       ...(floor !== undefined ? { floor } : {}),
       ...(totalFloors !== undefined ? { totalFloors } : {}),
       ...(photos ? { photos } : {}),
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 
@@ -210,6 +213,7 @@ export class CianParser extends BaseListingParser {
     const floorInfo = extractFloorFromTitle(meta.title);
     const rooms = extractRoomsFromText(title);
     const area = extractAreaFromText(title);
+    const phones = extractPhones(meta.description);
 
     return {
       source: 'LINK',
@@ -223,6 +227,7 @@ export class CianParser extends BaseListingParser {
       ...(area !== undefined ? { area } : {}),
       ...(floorInfo?.floor !== undefined ? { floor: floorInfo.floor } : {}),
       ...(floorInfo?.totalFloors !== undefined ? { totalFloors: floorInfo.totalFloors } : {}),
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 
@@ -366,6 +371,7 @@ export class CianParser extends BaseListingParser {
       ?? getString(offer, ['seoDescription']);
 
     const photos = this.extractPhotosFromOffer(offer);
+    const phones = extractPhones(description);
 
     if (!title || price == null || !city) return null;
 
@@ -384,6 +390,7 @@ export class CianParser extends BaseListingParser {
       ...(floor !== undefined ? { floor } : {}),
       ...(totalFloors !== undefined ? { totalFloors } : {}),
       ...(photos ? { photos } : {}),
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 
@@ -480,6 +487,8 @@ export class CianParser extends BaseListingParser {
       throw new ParserInvalidPageError('CIAN: не удалось разобрать страницу (нет title/price/city)');
     }
 
+    const phones = extractPhones(data.description);
+
     return {
       source: 'LINK',
       sourceUrl,
@@ -494,6 +503,7 @@ export class CianParser extends BaseListingParser {
       floor,
       totalFloors,
       photos: data.photos.length > 0 ? data.photos : undefined,
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 }

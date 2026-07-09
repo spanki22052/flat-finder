@@ -1,4 +1,5 @@
 import { apiClient } from '@/shared/api/client';
+import type { Reminder } from '@/shared/api/types';
 import type {
   Apartment,
   ApartmentsResponse,
@@ -16,6 +17,11 @@ export const flatApi = {
 
   getOne: async (id: string) => {
     const { data } = await apiClient.get<{ data: Apartment }>(`/apartments/${id}`);
+    return data.data;
+  },
+
+  getNextReminder: async (id: string): Promise<Reminder | null> => {
+    const { data } = await apiClient.get<{ data: Reminder | null }>(`/apartments/${id}/next-reminder`);
     return data.data;
   },
 

@@ -23,6 +23,11 @@ export class ApartmentsController {
     return this.service.findOne(id);
   }
 
+  @Get(':id/next-reminder')
+  async getNextReminder(@Param('id') id: string) {
+    return this.service.getNextReminder(id);
+  }
+
   @Post()
   create(@Body() dto: CreateApartmentDto, @CurrentUser('id') userId: string) {
     return this.service.create(dto, userId);

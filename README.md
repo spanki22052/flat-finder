@@ -1,6 +1,6 @@
 # Flat Finder
 
-Система для сбора и работы с объявлениями о квартирах: ручной ввод, MVP-парсер по ссылке, теги/статусы, журнал звонков, напоминания, multi-user доступ.
+Система для сбора и работы с объявлениями о квартирах: ручной ввод, MVP-парсер по ссылке, теги/статусы, напоминания, multi-user доступ.
 
 ## Tech Stack
 
@@ -70,6 +70,5 @@ npm run dev            # → http://localhost:5173
 | GET | /api/v1/apartments | Список квартир |
 | POST | /api/v1/apartments | Создать квартиру |
 | GET/PATCH/DELETE | /api/v1/apartments/:id | CRUD |
-| GET/POST | /api/v1/calls | Журнал звонков |
 | GET/POST/PATCH/DELETE | /api/v1/reminders | Напоминания |
 | GET/POST | /api/v1/contacts | Контакты |

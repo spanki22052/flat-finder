@@ -2,8 +2,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 import { Tooltip } from 'antd';
 import {
-  DashboardOutlined, HomeOutlined, PhoneOutlined, BellOutlined,
+  DashboardOutlined, HomeOutlined, BellOutlined,
   MenuFoldOutlined, MenuUnfoldOutlined, LogoutOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../../app/providers/AuthProvider';
 import {
@@ -16,8 +17,8 @@ import {
 const NAV_ITEMS = [
   { key: '/dashboard', label: 'Дашборд', icon: <DashboardOutlined /> },
   { key: '/apartments', label: 'Квартиры', icon: <HomeOutlined /> },
-  { key: '/calls', label: 'Звонки', icon: <PhoneOutlined /> },
   { key: '/reminders', label: 'Напоминания', icon: <BellOutlined /> },
+  { key: '/profile', label: 'Профиль', icon: <UserOutlined /> },
 ];
 
 interface LayoutSidebarProps {

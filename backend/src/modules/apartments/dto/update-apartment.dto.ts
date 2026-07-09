@@ -16,6 +16,7 @@ export class UpdateApartmentDto {
   @IsOptional() @IsNumber() @Min(0) totalFloors?: number;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) photos?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) phones?: string[];
   @IsOptional() @IsEnum(ApartmentStatus) status?: ApartmentStatus;
   @IsOptional() @IsString() contactId?: string;
   @IsOptional() @IsString() assigneeId?: string;

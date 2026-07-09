@@ -7,8 +7,8 @@ import { RegisterPage } from '../../pages/RegisterPage/RegisterPage';
 import { DashboardPage } from '../../pages/DashboardPage/DashboardPage';
 import { ApartmentsPage } from '../../pages/ApartmentsPage/ApartmentsPage';
 import { ApartmentDetailPage } from '../../pages/ApartmentDetailPage/ApartmentDetailPage';
-import { CallsPage } from '../../pages/CallsPage/CallsPage';
 import { RemindersPage } from '../../pages/RemindersPage/RemindersPage';
+import { ProfilePage } from '../../pages/ProfilePage/ProfilePage';
 
 export function AppRouter() {
   return (
@@ -21,8 +21,8 @@ export function AppRouter() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/apartments" element={<ApartmentsPage />} />
           <Route path="/apartments/:id" element={<ApartmentDetailPage />} />
-          <Route path="/calls" element={<CallsPage />} />
           <Route path="/reminders" element={<RemindersPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>
     </Routes>
