@@ -74,6 +74,9 @@ export const GlassCard = styled.div({
     background: `${ACTION_COL_BG} !important`,
     backgroundColor: `${theme.colors.bg.deep} !important`,
   },
+  '.ant-pagination': {
+    padding: '12px 24px',
+  },
 });
 
 export const ApartmentRow = styled.div({
