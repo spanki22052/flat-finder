@@ -13,7 +13,7 @@ import { AvitoParser } from './strategies/avito.strategy.js';
 import { YandexRealtyParser } from './strategies/yandex.strategy.js';
 import { DomClickParser } from './strategies/domclick.strategy.js';
 
-const TIMEOUT_MS = 25_000;
+const TIMEOUT_MS = 35_000;
 
 interface ParserErrorBody {
   code: string;

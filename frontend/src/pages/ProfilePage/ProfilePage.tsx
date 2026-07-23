@@ -25,8 +25,8 @@ export function ProfilePage() {
   const load = async () => {
     setLoading(true);
     try {
-      const me = await authApi.me();
-      setUser(me);
+      const response = await authApi.me();
+      setUser(response.data.data.user);
     } catch {
       message.error('Не удалось загрузить профиль');
     } finally {

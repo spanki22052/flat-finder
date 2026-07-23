@@ -12,6 +12,11 @@ import {
 } from '@ant-design/icons';
 import { theme } from '../../app/styles/theme';
 import { flatApi } from '../../entities/Flat/utils/api';
+import {
+  isSupportedParseUrl,
+  PARSE_LINK_HINT,
+  PARSE_LINK_PLACEHOLDER,
+} from '../../entities/Flat/utils/parseLink';
 import type {
   Apartment, ApartmentStatus, CreateApartmentPayload, ParsedApartment,
 } from '../../entities/Flat/model/types';
@@ -252,6 +257,10 @@ const [form] = Form.useForm<ApartmentFormValues>();
       message.warning('Введите ссылку');
       return;
     }
+    if (!isSupportedParseUrl(linkUrl)) {
+      message.error('Этот источник пока не поддерживается');
+      return;
+    }
     setParsing(true);
     try {
       const parsed = await flatApi.parseLink(linkUrl.trim());
@@ -267,6 +276,10 @@ const [form] = Form.useForm<ApartmentFormValues>();
   const handleParseInModal = async () => {
     if (!importUrl.trim()) {
       message.warning('Введите ссылку');
+      return;
+    }
+    if (!isSupportedParseUrl(importUrl)) {
+      message.error('Этот источник пока не поддерживается');
       return;
     }
     setImportParsing(true);
@@ -483,7 +496,7 @@ const [form] = Form.useForm<ApartmentFormValues>();
           <div>
             <Form.Item label="Ссылка на объявление">
               <Input
-                placeholder="https://www.cian.ru/sale/flat/..."
+                placeholder={PARSE_LINK_PLACEHOLDER}
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
                 onPressEnter={handleParseInDrawer}
@@ -502,8 +515,8 @@ const [form] = Form.useForm<ApartmentFormValues>();
               Импортировать
             </Button>
             <LinkModeHint>
-              Поддерживаются: CIAN, Avito, Яндекс Недвижимость, DomClick.
-              Данные подставятся в форму — вы сможете их отредактировать перед сохранением.
+              {PARSE_LINK_HINT}
+              {' '}Данные подставятся в форму — вы сможете их отредактировать перед сохранением.
             </LinkModeHint>
           </div>
         ) : (
@@ -636,10 +649,10 @@ const [form] = Form.useForm<ApartmentFormValues>();
         destroyOnClose
       >
         <p style={{ color: theme.colors.text.secondary, marginBottom: 12 }}>
-          Вставьте ссылку на объявление. Поддерживаются: CIAN, Avito, Яндекс Недвижимость, DomClick.
+          Вставьте ссылку на объявление. {PARSE_LINK_HINT}
         </p>
         <Input
-          placeholder="https://www.cian.ru/sale/flat/..."
+          placeholder={PARSE_LINK_PLACEHOLDER}
           value={importUrl}
           onChange={(e) => setImportUrl(e.target.value)}
           onPressEnter={handleParseInModal}

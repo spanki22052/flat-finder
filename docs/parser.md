@@ -17,7 +17,7 @@ parser/
 │   ├── cian.strategy.ts      # light-fetch → SSR-state → Playwright
 │   ├── avito.strategy.ts     # light-fetch → __INITIAL_STATE__ → Playwright
 │   ├── yandex.strategy.ts    # light-fetch → __INITIAL_STATE__ → Playwright
-│   └── domclick.strategy.ts  # cheerio + undici (без браузера)
+│   └── domclick.strategy.ts  # light-fetch → Playwright HTML download → __SSR_STATE__/og/DOM
 ├── utils/
 │   ├── stealth.ts            # playwright launch с anti-bot патчами
 │   ├── delays.ts             # рандомные задержки
@@ -68,7 +68,13 @@ parser/
   - WebGL vendor/params подменены на Intel Iris;
   - `chrome.runtime` присутствует;
   - `--disable-blink-features=AutomationControlled` в launch args.
-- **DomClick** — `cheerio` + `undici` (без браузера, т.к. защита слабее).
+- **DomClick** — light-fetch, при блоке/пустых данных — Playwright скачивает HTML, потом тот же разбор:
+  1. `window.__SSR_STATE__.productCard` (основной источник на карточках `/card/…`);
+  2. JSON-LD `@type=Apartment|…` (если есть);
+  3. `og:title` / `og:description` / `og:image`;
+  4. DOM-селекторы (`h1`, `data-testid=price-value`).
+  Региональные хосты (`tyumen.domclick.ru` и т.п.) поддерживаются тем же `hostnamePattern`.
+  `PARSER_BLOCKED` только если браузер тоже получил капчу/блок.
 - **JSON-LD парсинг** — при наличии `<script type="application/ld+json">` сначала
   пробуем достать данные оттуда. Устойчивее, чем CSS-селекторы.
 

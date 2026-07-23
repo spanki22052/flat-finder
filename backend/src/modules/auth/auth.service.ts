@@ -22,8 +22,8 @@ export class AuthService {
     const existing = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: dto.email ?? null },
           { username: dto.username },
+          ...(dto.email !== undefined ? [{ email: dto.email }] : []),
         ],
       },
     });

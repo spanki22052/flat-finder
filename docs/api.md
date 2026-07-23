@@ -147,7 +147,7 @@ POST /apartments/parse-link
 }
 ```
 
-Поддерживаемые источники: `cian.ru`, `avito.ru`, `yandex.ru/realty`/`realty.yandex.ru`, `domclick.ru`/`domclick.com`.
+Поддерживаемые источники: `cian.ru`, `avito.ru`, `yandex.ru/realty`/`realty.yandex.ru`, `domclick.ru`/`domclick.com` (включая региональные поддомены, напр. `tyumen.domclick.ru/card/rent__flat__…`).
 
 Ошибки:
 

@@ -21,9 +21,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!token) { setIsLoading(false); return; }
-    apiClient.get<{ data: User }>('/auth/me')
-      .then((res) => setUser(res.data.data))
-      .catch(() => { localStorage.removeItem('token'); setToken(null); })
+    apiClient.get<{ data: { user: User } }>('/auth/me')
+      .then((res) => setUser(res.data.data.user))
+      .catch(() => {
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+      })
       .finally(() => setIsLoading(false));
   }, [token]);
 

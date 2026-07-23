@@ -7,11 +7,11 @@ import type {
 } from './types';
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    apiClient.post<AuthResponse>('/auth/login', { email, password }),
-  register: (email: string, password: string, name: string) =>
-    apiClient.post<AuthResponse>('/auth/register', { email, password, name }),
-  me: () => apiClient.get<User>('/auth/me'),
+  login: (login: string, password: string) =>
+    apiClient.post<ApiResponse<AuthResponse>>('/auth/login', { login, password }),
+  register: (username: string, password: string, name: string, email?: string) =>
+    apiClient.post<ApiResponse<AuthResponse>>('/auth/register', { username, password, name, email }),
+  me: () => apiClient.get<ApiResponse<{ user: User }>>('/auth/me'),
 };
 
 export const contactsApi = {
