@@ -15,8 +15,8 @@ export const GlobalStyles = createGlobalStyle`
 
   body {
     font-family: ${theme.fonts.sans};
-    background-color: ${theme.colors.bg.deep};
-    color: ${theme.colors.text.inverse};
+    background-color: ${theme.colors.bg.surface};
+    color: ${theme.colors.text.primary};
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -28,8 +28,8 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   ::selection {
-    background: rgba(159, 161, 255, 0.4);
-    color: ${theme.colors.text.primary};
+    background: ${theme.colors.primaryFixed};
+    color: ${theme.colors.onPrimaryFixed};
   }
 
   ::-webkit-scrollbar {
@@ -40,27 +40,27 @@ export const GlobalStyles = createGlobalStyle`
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(159, 161, 255, 0.3);
+    background: ${theme.colors.outlineVariant};
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(159, 161, 255, 0.5);
+    background: ${theme.colors.outline};
   }
 
   :focus-visible {
-    outline: 2px solid ${theme.colors.accent.primary};
+    outline: 2px solid ${theme.colors.primary};
     outline-offset: 2px;
     border-radius: ${theme.radius.sm};
   }
 
   a {
-    color: ${theme.colors.accent.primary};
+    color: ${theme.colors.primary};
     text-decoration: none;
     transition: color 0.2s ease;
   }
 
   a:hover {
-    color: ${theme.colors.accent.secondary};
+    color: ${theme.colors.primaryHover};
   }
 
   button {
@@ -86,29 +86,14 @@ export const GlobalStyles = createGlobalStyle`
     box-shadow: none !important;
   }
 
-  /* DatePicker time panel — darker hover/focus for dark theme */
+  /* AntD body/wrapper override — light warm bg */
   .ant-picker-time-panel-cell .ant-picker-time-panel-cell-inner:hover {
-    background: rgba(159, 161, 255, 0.18) !important;
+    background: ${theme.colors.primaryFixed} !important;
   }
   .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner,
   .ant-picker-time-panel-cell:focus .ant-picker-time-panel-cell-inner {
-    background: rgba(159, 161, 255, 0.32) !important;
-    color: #fff !important;
+    background: ${theme.colors.primary} !important;
+    color: ${theme.colors.text.onPrimary} !important;
     font-weight: 600;
-  }
-
-  /* Select clear icon — white circular background for visibility on dark inputs */
-  .ant-select-clear {
-    background: #fff !important;
-    color: ${theme.colors.bg.deep};
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .ant-select-clear .anticon {
-    font-size: 12px;
   }
 `;

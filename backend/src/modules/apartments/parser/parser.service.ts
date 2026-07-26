@@ -12,8 +12,9 @@ import { CianParser } from './strategies/cian.strategy.js';
 import { AvitoParser } from './strategies/avito.strategy.js';
 import { YandexRealtyParser } from './strategies/yandex.strategy.js';
 import { DomClickParser } from './strategies/domclick.strategy.js';
+import { HtmlParseSource, ParseHtmlDto } from './dto/parse-html.dto.js';
 
-const TIMEOUT_MS = 35_000;
+const TIMEOUT_MS = Number(process.env.PARSER_TIMEOUT_MS) || 55_000;
 
 interface ParserErrorBody {
   code: string;
@@ -40,6 +41,21 @@ export class ParserService {
     ];
   }
 
+  async parseHtml(dto: ParseHtmlDto): Promise<ParsedListing> {
+    const sourceUrl = dto.sourceUrl ?? this.defaultSourceUrl(dto.source);
+    this.logger.log(`Parsing supplied HTML with strategy=${dto.source}`);
+
+    try {
+      if (dto.source === 'avito') {
+        return new AvitoParser().parseHtml(dto.html, sourceUrl);
+      }
+      return new DomClickParser().parseHtml(dto.html, sourceUrl, { throwOnFail: true })
+        ?? (() => { throw new ParserInvalidPageError('DomClick: HTML не содержит данных карточки'); })();
+    } catch (err) {
+      this.handleParseError(err);
+    }
+  }
+
   async parseLink(url: string): Promise<ParsedListing> {
     const strategy = this.strategies.find((s) => s.matches(url));
     if (!strategy) {
@@ -54,34 +70,42 @@ export class ParserService {
     try {
       return await this.withTimeout(strategy.parse(url), TIMEOUT_MS);
     } catch (err) {
-      if (err instanceof ParserBlockedError) {
-        throw new ParserUpstreamException(
-          'PARSER_BLOCKED',
-          'Сайт заблокировал парсинг. Попробуйте позже или заполните вручную.',
-          HttpStatus.BAD_GATEWAY,
-        );
-      }
-      if (err instanceof ParserInvalidPageError) {
-        throw new UnprocessableEntityException({
-          code: 'PARSER_INVALID_PAGE',
-          message: err.message,
-        } as ParserErrorBody);
-      }
-      if (err instanceof BadRequestException) throw err;
-      if (err instanceof Error && /timeout/i.test(err.message)) {
-        throw new ParserUpstreamException(
-          'PARSER_TIMEOUT',
-          'Не удалось загрузить страницу за отведённое время',
-          HttpStatus.GATEWAY_TIMEOUT,
-        );
-      }
-      this.logger.error(`Parser failed: ${err instanceof Error ? err.stack ?? err.message : String(err)}`);
+      this.handleParseError(err);
+    }
+  }
+
+  private defaultSourceUrl(source: HtmlParseSource): string {
+    return source === 'avito' ? 'https://www.avito.ru/' : 'https://domclick.ru/';
+  }
+
+  private handleParseError(err: unknown): never {
+    if (err instanceof ParserBlockedError) {
       throw new ParserUpstreamException(
-        'PARSER_FAILED',
-        'Не удалось разобрать страницу. Попробуйте позже.',
+        'PARSER_BLOCKED',
+        'Сайт заблокировал парсинг. Попробуйте позже или заполните вручную.',
         HttpStatus.BAD_GATEWAY,
       );
     }
+    if (err instanceof ParserInvalidPageError) {
+      throw new UnprocessableEntityException({
+        code: 'PARSER_INVALID_PAGE',
+        message: err.message,
+      } as ParserErrorBody);
+    }
+    if (err instanceof BadRequestException) throw err;
+    if (err instanceof Error && /timeout/i.test(err.message)) {
+      throw new ParserUpstreamException(
+        'PARSER_TIMEOUT',
+        'Не удалось загрузить страницу за отведённое время',
+        HttpStatus.GATEWAY_TIMEOUT,
+      );
+    }
+    this.logger.error(`Parser failed: ${err instanceof Error ? err.stack ?? err.message : String(err)}`);
+    throw new ParserUpstreamException(
+      'PARSER_FAILED',
+      'Не удалось разобрать страницу. Попробуйте позже.',
+      HttpStatus.BAD_GATEWAY,
+    );
   }
 
   private async withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {

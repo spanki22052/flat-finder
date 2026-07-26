@@ -249,7 +249,7 @@ export class YandexRealtyParser extends BaseListingParser {
   }
 
   // ─── DOM fallback ───────────────────────────────────────────────────────
-  private async extractFromDom(page: import('playwright').Page, sourceUrl: string): Promise<ParsedListing> {
+  private async extractFromDom(page: import('rebrowser-playwright').Page, sourceUrl: string): Promise<ParsedListing> {
     const data = await page.evaluate(() => {
       const titleEl = document.querySelector<HTMLElement>('[data-testid="offer-title"]')
         ?? document.querySelector<HTMLElement>('h1');

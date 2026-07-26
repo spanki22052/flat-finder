@@ -7,6 +7,7 @@ import type {
   UpdateApartmentPayload,
   GetApartmentsParams,
   ParsedApartment,
+  HtmlParseSource,
 } from '../model/types';
 
 export const flatApi = {
@@ -46,6 +47,11 @@ export const flatApi = {
 
   parseLink: async (url: string): Promise<ParsedApartment> => {
     const { data } = await apiClient.post<{ data: ParsedApartment }>('/apartments/parse-link', { url });
+    return data.data;
+  },
+
+  parseHtml: async (payload: { source: HtmlParseSource; html: string; sourceUrl?: string }): Promise<ParsedApartment> => {
+    const { data } = await apiClient.post<{ data: ParsedApartment }>('/apartments/parse-html', payload);
     return data.data;
   },
 };

@@ -1,11 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { json } from 'express';
 import { AppModule } from './app.module.js';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
 import { TransformInterceptor } from './common/transform.interceptor.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Дефолтный лимит body-parser (100kb) слишком мал для HTML-импорта
+  // объявлений (POST /apartments/parse-html может содержать до 2MB HTML).
+  app.use(json({ limit: '10mb' }));
 
   app.setGlobalPrefix('api/v1');
 

@@ -70,6 +70,8 @@ export interface ApartmentsResponse {
   meta: ApartmentsMeta;
 }
 
+export type HtmlParseSource = 'avito' | 'domclick';
+
 export interface ParsedApartment {
   source: ApartmentSource;
   sourceUrl: string;

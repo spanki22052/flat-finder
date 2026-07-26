@@ -1,6 +1,7 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ParserService } from './parser.service.js';
 import { ParseLinkDto } from './dto/parse-link.dto.js';
+import { ParseHtmlDto } from './dto/parse-html.dto.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 
 @Controller('apartments')
@@ -11,5 +12,10 @@ export class ParserController {
   @Post('parse-link')
   async parseLink(@Body() dto: ParseLinkDto) {
     return this.parserService.parseLink(dto.url);
+  }
+
+  @Post('parse-html')
+  async parseHtml(@Body() dto: ParseHtmlDto) {
+    return this.parserService.parseHtml(dto);
   }
 }

@@ -26,8 +26,14 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const roomId = localStorage.getItem('roomId');
+  if (roomId) {
+    config.headers['X-Room-Id'] = roomId;
+  }
   return config;
 });
+
+const ROOM_ERROR_CODES = ['ROOM_REQUIRED', 'ROOM_ACCESS_DENIED'];
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -35,6 +41,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
+    }
+    const code = error.response?.data?.error?.code;
+    if (ROOM_ERROR_CODES.includes(code) && window.location.pathname !== '/rooms') {
+      localStorage.removeItem('roomId');
+      window.location.href = '/rooms';
     }
     return Promise.reject(error);
   },

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { load } from 'cheerio';
 import { BaseListingParser, ParsedListing } from './base.strategy.js';
 import { randomDelay } from '../utils/delays.js';
 import { randomUserAgent } from '../utils/user-agents.js';
@@ -117,8 +118,66 @@ export class AvitoParser extends BaseListingParser {
     }
   }
 
+  parseHtml(html: string, sourceUrl: string): ParsedListing {
+    if (looksBlocked(html)) {
+      throw new ParserBlockedError('Avito: HTML содержит страницу блокировки');
+    }
+
+    const $ = load(html);
+    const text = (selector: string) => $(selector).first().text().trim() || null;
+    const title = text('[data-marker="item-view/title-info"]')
+      ?? text('h1')
+      ?? ($('title').text().trim() || null);
+    const priceText = text('[data-marker="item-view/item-price"]')
+      ?? text('[itemprop="price"]')
+      ?? text('[class*="item-price"]');
+    const address = text('[data-marker="item-view/item-address"]')
+      ?? text('[itemprop="address"]')
+      ?? text('[class*="item-address"]');
+    const cityText = text('[data-marker="item-view/item-location"]')
+      ?? text('.style-item-address__string-wtd61')
+      ?? text('[class*="item-location"]');
+    const description = text('[data-marker="item-view/item-description"]')
+      ?? text('[data-marker="item-description"]')
+      ?? text('[class*="item-description"]');
+    const paramsList = $('[data-marker="item-view/item-params"] li, .params-paramsList__item-_2R3P, [class*="params"] li')
+      .toArray()
+      .map((element) => $(element).text().trim())
+      .filter(Boolean);
+    const photos = $('[data-marker="item-view/gallery"] img, [data-marker="image-frame/image"] img, [class*="gallery"] img')
+      .toArray()
+      .map((element) => $(element).attr('src') ?? $(element).attr('data-src') ?? '')
+      .filter(Boolean);
+    const price = parsePrice(priceText);
+    const city = parseCity(cityText, address, sourceUrl);
+    const rooms = findParamNumber(paramsList, /(\d+)\s*-?\s*к/i);
+    const area = findParamNumber(paramsList, /(\d+(?:[.,]\d+)?)\s*м²/i);
+    const { floor, totalFloors } = parseFloorFromParams(paramsList);
+
+    if (!title || price == null || !city) {
+      throw new ParserInvalidPageError('Avito: HTML не содержит данных карточки (title/price/city)');
+    }
+
+    return {
+      source: 'LINK',
+      sourceUrl,
+      title,
+      price,
+      currency: 'RUB',
+      city,
+      ...(address ? { address } : {}),
+      ...(description ? { description } : {}),
+      ...(rooms !== undefined ? { rooms } : {}),
+      ...(area !== undefined ? { area } : {}),
+      ...(floor !== undefined ? { floor } : {}),
+      ...(totalFloors !== undefined ? { totalFloors } : {}),
+      ...(photos.length > 0 ? { photos: Array.from(new Set(photos)) } : {}),
+      ...(description ? { phones: extractPhones(description) } : {}),
+    };
+  }
+
   // ─── DOM fallback ───────────────────────────────────────────────────────
-  private async extractFromDom(page: import('playwright').Page, sourceUrl: string): Promise<ParsedListing> {
+  private async extractFromDom(page: import('rebrowser-playwright').Page, sourceUrl: string): Promise<ParsedListing> {
     // Дополнительно подождём появления цены и описания, если они ещё не отрендерились.
     try {
       await page.waitForSelector(

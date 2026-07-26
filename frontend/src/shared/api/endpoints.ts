@@ -14,6 +14,10 @@ export const authApi = {
   me: () => apiClient.get<ApiResponse<{ user: User }>>('/auth/me'),
 };
 
+export const usersApi = {
+  get: (id: string) => apiClient.get<ApiResponse<User>>(`/users/${id}`),
+};
+
 export const contactsApi = {
   list: (params?: Record<string, string | number>) =>
     apiClient.get<ApiResponse<Contact[]> & { meta: { page: number; pageSize: number; total: number } }>(

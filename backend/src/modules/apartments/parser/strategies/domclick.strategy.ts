@@ -3,15 +3,9 @@ import { load } from 'cheerio';
 import type { Currency } from '@prisma/client';
 import { BaseListingParser, ParsedListing } from './base.strategy.js';
 import { ParserBlockedError, ParserInvalidPageError } from './cian.strategy.js';
-import {
-  lightFetch,
-  looksBlocked,
-  normalizeCurrency,
-  BLOCK_MARKERS,
-} from '../utils/light-fetch.js';
+import { normalizeCurrency, BLOCK_MARKERS } from '../utils/light-fetch.js';
 import { extractPhones } from '../utils/phones.js';
 import { randomDelay } from '../utils/delays.js';
-import { randomUserAgent } from '../utils/user-agents.js';
 import { createStealthContext, launchStealthBrowser } from '../utils/stealth.js';
 
 const PHOTO_CDN = 'https://img.dmclk.ru';
@@ -24,101 +18,50 @@ export class DomClickParser extends BaseListingParser {
   private readonly logger = new Logger(DomClickParser.name);
 
   async parse(url: string): Promise<ParsedListing> {
-    // Шаг 1: лёгкий HTTP GET. На блоке/пустых данных — не сдаёмся, идём в браузер.
-    try {
-      const light = await this.lightParse(url);
-      if (light) {
-        this.logger.log(`DomClick parsed via light-fetch: ${url}`);
-        return light;
-      }
-    } catch (err) {
-      this.logger.debug(
-        `DomClick light-fetch failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-
-    // Шаг 2: скачать HTML через Playwright, потом распарсить тем же пайплайном
-    return this.heavyParse(url);
-  }
-
-  private async lightParse(url: string): Promise<ParsedListing | null> {
-    this.logger.log(`Fetching ${url}`);
-    const { html } = await lightFetch(url, {
-      referer: 'https://domclick.ru/',
-      timeoutMs: 8000,
-      extraHeaders: {
-        'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"',
-      },
-    });
-
-    if (isDomclickBlocked(html)) {
-      this.logger.warn(
-        `DomClick light-fetch looks blocked (len=${html.length}, markers=${detectBlockMarkers(html).join(',')}), will try browser: ${url}`,
-      );
-      return null;
-    }
-
-    const result = this.parseHtml(html, url, { throwOnFail: false });
-    if (!result) {
-      this.logger.warn(`DomClick light-fetch got HTML but parsed nothing (len=${html.length}): ${url}`);
-    }
-    return result;
-  }
-
-  private async heavyParse(url: string): Promise<ParsedListing> {
     const proxyUrl = process.env.PARSER_PROXY_URL;
+    const headless = process.env.PARSER_HEADLESS !== 'false';
+    const useSystemChrome = process.env.PARSER_DOMCLICK_USE_CHROME !== 'false';
     const browser = await launchStealthBrowser({
-      headless: process.env.PARSER_HEADLESS !== 'false',
+      headless,
+      ...(useSystemChrome ? { channel: 'chrome' as const } : {}),
       ...(proxyUrl ? { proxyUrl } : {}),
-      userAgent: randomUserAgent(),
     });
 
     try {
       const context = await createStealthContext(browser, {
         ...(proxyUrl ? { proxyUrl } : {}),
-        userAgent: randomUserAgent(),
+        locale: 'ru-RU',
+        timezoneId: 'Europe/Moscow',
       });
       const page = await context.newPage();
       await page.setExtraHTTPHeaders({
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
         Referer: 'https://domclick.ru/',
       });
 
-      this.logger.log(`DomClick browser download: ${url}`);
-      // goto timeout must leave room for waitForFunction + parse within outer 25s budget
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 14000 });
-      this.logger.log(`DomClick browser: domcontentloaded for ${url}`);
+      this.logger.log(`DomClick navigating to ${url} (headless=${headless}, chrome=${useSystemChrome})`);
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25_000 });
 
-      // SSR-state is injected inline → available immediately after DOMContentLoaded.
-      // waitForFunction is a safety net; short timeout so we don't blow the budget.
+      // Qrator may set qrator_jsid and redirect only after its JS challenge finishes.
+      await randomDelay(2_500, 4_000);
       try {
-        await page.waitForFunction(
-          () => {
-            const w = window as unknown as { __SSR_STATE__?: { productCard?: unknown } };
-            return Boolean(
-              w.__SSR_STATE__?.productCard
-              || document.querySelector('meta[property="og:title"]')
-              || document.querySelector('h1'),
-            );
-          },
-          { timeout: 6000 },
-        );
+        await page.waitForLoadState('networkidle', { timeout: 10_000 });
       } catch {
-        // OK — grab what we have
+        this.logger.debug('DomClick network did not become idle before extraction');
       }
+
+      const cookies = await context.cookies();
+      const hasQratorCookie = cookies.some((cookie) => cookie.name.startsWith('qrator'));
+      if (hasQratorCookie) this.logger.debug('DomClick Qrator session cookie acquired');
 
       const html = await page.content();
-      this.logger.log(`DomClick browser: got HTML len=${html.length}, blocked=${isDomclickBlocked(html)}`);
-
+      this.logger.debug(`DomClick rendered HTML length=${html.length}`);
       if (isDomclickBlocked(html)) {
-        throw new ParserBlockedError('DomClick: страница заблокирована');
+        throw new ParserBlockedError('DomClick: страница заблокирована после challenge');
       }
 
-      const mapped = this.parseHtml(html, url, { throwOnFail: false });
-      if (mapped) return mapped;
+      const parsed = this.parseHtml(html, url, { throwOnFail: false });
+      if (parsed) return parsed;
 
       throw new ParserInvalidPageError('DomClick: не удалось разобрать страницу после загрузки');
     } finally {

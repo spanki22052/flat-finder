@@ -3,12 +3,6 @@ import { motion } from 'framer-motion';
 import { Form, Button } from 'antd';
 import { theme } from '../../app/styles/theme';
 
-export const bgPulse = {
-  '0%': { opacity: 0.4, transform: 'scale(1) translate(0, 0)' },
-  '50%': { opacity: 0.7, transform: 'scale(1.05) translate(2%, -1%)' },
-  '100%': { opacity: 0.4, transform: 'scale(1) translate(0, 0)' },
-};
-
 export const Page = styled.div({
   minHeight: '100vh',
   display: 'flex',
@@ -17,14 +11,15 @@ export const Page = styled.div({
   padding: 24,
   position: 'relative',
   overflow: 'hidden',
+  background: theme.colors.bg.surface,
   '&::before': {
     content: "''",
     position: 'absolute',
     inset: 0,
     background: [
-      'radial-gradient(ellipse 70% 60% at 20% 10%, rgba(159, 161, 255, 0.4), transparent)',
-      'radial-gradient(ellipse 50% 50% at 80% 80%, rgba(193, 235, 233, 0.25), transparent)',
-      'radial-gradient(ellipse 60% 40% at 50% 110%, rgba(217, 249, 223, 0.15), transparent)',
+      'radial-gradient(ellipse 70% 60% at 20% 10%, rgba(255, 219, 207, 0.6), transparent)',
+      'radial-gradient(ellipse 50% 50% at 80% 80%, rgba(255, 221, 185, 0.5), transparent)',
+      'radial-gradient(ellipse 60% 40% at 50% 110%, rgba(232, 223, 204, 0.4), transparent)',
     ].join(', '),
   },
 });
@@ -33,16 +28,15 @@ export const Card = styled(motion.div)({
   position: 'relative',
   zIndex: 1,
   width: '100%',
-  maxWidth: 420,
+  maxWidth: 440,
   background: theme.colors.bg.card,
-  backdropFilter: 'blur(24px)',
-  border: `1px solid ${theme.colors.bg.glassBorder}`,
-  borderRadius: 24,
-  padding: 40,
-  boxShadow: `${theme.shadows.card}, 0 0 60px rgba(159, 161, 255, 0.12)`,
+  border: `1px solid ${theme.colors.outlineVariant}`,
+  borderRadius: theme.radius.xl,
+  padding: 48,
+  boxShadow: theme.shadows.cardHover,
   '@media (max-width: 480px)': {
-    padding: '28px 24px',
-    borderRadius: 20,
+    padding: '32px 24px',
+    borderRadius: theme.radius.lg,
   },
 });
 
@@ -52,25 +46,28 @@ export const LogoArea = styled.div({
 });
 
 export const LogoIcon = styled.div({
-  width: 56,
-  height: 56,
-  borderRadius: 16,
-  background: theme.gradients.accent,
+  width: 64,
+  height: 64,
+  borderRadius: theme.radius.lg,
+  background: theme.gradients.primaryHero,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   fontWeight: 800,
-  fontSize: 24,
-  color: theme.colors.text.inverse,
-  boxShadow: '0 8px 24px rgba(159, 161, 255, 0.4)',
+  fontSize: 26,
+  color: theme.colors.text.onPrimary,
+  boxShadow: theme.shadows.primary,
   marginBottom: 16,
+  letterSpacing: '-0.02em',
 });
 
 export const Title = styled.h1({
-  fontSize: 22,
+  fontFamily: theme.fonts.sans,
+  fontSize: 26,
   fontWeight: 700,
-  color: theme.colors.text.inverse,
-  marginBottom: 4,
+  letterSpacing: '-0.01em',
+  color: theme.colors.text.primary,
+  marginBottom: 6,
 });
 
 export const Subtitle = styled.p({
@@ -79,17 +76,17 @@ export const Subtitle = styled.p({
 });
 
 export const FormStyled = styled(Form)({
-  '.ant-form-item': { marginBottom: 20 },
+  '.ant-form-item': { marginBottom: 18 },
   '.ant-input-affix-wrapper, .ant-input': {
-    background: 'rgba(255, 255, 255, 0.04) !important',
-    borderColor: `${theme.colors.bg.glassBorder} !important`,
-    color: `${theme.colors.text.inverse} !important`,
-    borderRadius: 10,
+    background: theme.colors.bg.surfaceLow,
+    borderColor: theme.colors.outlineVariant,
+    color: theme.colors.text.primary,
+    borderRadius: theme.radius.md,
     fontSize: 15,
-    '&::placeholder': { color: `${theme.colors.text.muted} !important` },
+    '&::placeholder': { color: theme.colors.text.muted },
     '&:hover, &:focus': {
-      borderColor: `${theme.colors.accent.primary} !important`,
-      boxShadow: '0 0 0 3px rgba(159, 161, 255, 0.18) !important',
+      borderColor: theme.colors.primary,
+      boxShadow: '0 0 0 3px rgba(150, 67, 37, 0.12)',
     },
   },
 });
@@ -97,18 +94,21 @@ export const FormStyled = styled(Form)({
 export const SubmitBtn = styled(Button)({
   width: '100%',
   height: '48px !important',
-  borderRadius: '10px !important',
-  fontWeight: '600 !important',
+  borderRadius: `${theme.radius.md} !important`,
+  fontWeight: '700 !important',
   fontSize: '15px !important',
-  background: `${theme.gradients.accent} !important`,
+  background: `${theme.gradients.primaryHero} !important`,
   border: 'none !important',
-  boxShadow: '0 4px 16px rgba(159, 161, 255, 0.4) !important',
+  color: `${theme.colors.text.onPrimary} !important`,
+  boxShadow: `${theme.shadows.primary} !important`,
   transition: 'all 0.2s ease !important',
+  letterSpacing: '0.02em',
   '&:hover': {
-    transform: 'translateY(-1px)',
-    boxShadow: '0 6px 20px rgba(159, 161, 255, 0.55) !important',
+    transform: 'translateY(-1px) !important',
+    boxShadow: '0 8px 24px rgba(150, 67, 37, 0.4) !important',
+    background: `${theme.colors.primaryHover} !important`,
   },
-  '&:active': { transform: 'translateY(0)' },
+  '&:active': { transform: 'translateY(0) !important' },
   '&:disabled': { opacity: 0.5, transform: 'none' },
 });
 
@@ -118,9 +118,9 @@ export const FooterText = styled.p({
   fontSize: 14,
   color: theme.colors.text.secondary,
   a: {
-    color: theme.colors.accent.primary,
-    fontWeight: 600,
+    color: theme.colors.primary,
+    fontWeight: 700,
     transition: theme.transition,
-    '&:hover': { color: theme.colors.accent.secondary },
+    '&:hover': { color: theme.colors.primaryHover },
   },
 });

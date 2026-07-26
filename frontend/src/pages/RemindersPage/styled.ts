@@ -8,6 +8,14 @@ export const PageHeader = styled.div({
   marginBottom: 24,
   flexWrap: 'wrap',
   gap: 16,
+  '@media (max-width: 640px)': {
+    alignItems: 'stretch',
+    gap: 12,
+    '& > .ant-btn': {
+      width: '100%',
+      whiteSpace: 'nowrap',
+    },
+  },
 });
 
 export const PageTitle = styled.h1({
@@ -21,6 +29,12 @@ export const FiltersRow = styled.div({
   gap: 12,
   marginBottom: 20,
   flexWrap: 'wrap',
+  '@media (max-width: 640px)': {
+    '& > *': {
+      width: '100% !important',
+      maxWidth: 'none',
+    },
+  },
 });
 
 export const GlassCard = styled.div({
@@ -35,6 +49,7 @@ export const GlassCard = styled.div({
 export const ReminderItem = styled.div<{ $done: boolean }>((props) => ({
   display: 'flex',
   alignItems: 'flex-start',
+  minWidth: 0,
   gap: 16,
   padding: '20px 24px',
   borderBottom: `1px solid ${theme.colors.bg.glassBorder}`,
@@ -42,6 +57,19 @@ export const ReminderItem = styled.div<{ $done: boolean }>((props) => ({
   opacity: props.$done ? 0.55 : 1,
   '&:last-child': { borderBottom: 'none' },
   '&:hover': { background: theme.colors.bg.cardHover },
+  '@media (max-width: 640px)': {
+    gap: 10,
+    padding: '14px 16px',
+    flexWrap: 'wrap',
+    '& > .ant-space': {
+      width: '100%',
+      marginLeft: 54,
+      overflowX: 'auto',
+      flexWrap: 'nowrap',
+      '& > .ant-space-item': { flex: '0 0 auto' },
+    },
+    '& .ant-btn': { whiteSpace: 'nowrap', flex: '0 0 auto' },
+  },
 }));
 
 export const ReminderIcon = styled.div<{ $done: boolean }>((props) => ({
@@ -49,8 +77,9 @@ export const ReminderIcon = styled.div<{ $done: boolean }>((props) => ({
   height: 44,
   borderRadius: 12,
   flexShrink: 0,
-  background: props.$done ? 'rgba(159,161,255,0.12)' : 'rgba(193,235,233,0.12)',
-  border: `1px solid ${props.$done ? 'rgba(159,161,255,0.3)' : 'rgba(193,235,233,0.28)'}`,
+  background: props.$done ? 'rgba(79, 122, 82, 0.10)' : 'rgba(150, 67, 37, 0.10)',
+  border: `1px solid ${props.$done ? 'rgba(79, 122, 82, 0.28)' : 'rgba(150, 67, 37, 0.24)'}`,
+  color: props.$done ? theme.colors.status.ACTIVE : theme.colors.primary,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -81,8 +110,8 @@ export const DueBadge = styled.div<{ $overdue: boolean }>((props) => ({
   gap: 4,
   fontSize: 12,
   fontWeight: 600,
-  color: props.$overdue ? theme.colors.accent.secondary : theme.colors.accent.primary,
-  background: props.$overdue ? 'rgba(193,235,233,0.14)' : 'rgba(159,161,255,0.14)',
+  color: props.$overdue ? theme.colors.error : theme.colors.primary,
+  background: props.$overdue ? 'rgba(186, 26, 26, 0.10)' : 'rgba(150, 67, 37, 0.10)',
   padding: '2px 8px',
   borderRadius: 6,
 }));

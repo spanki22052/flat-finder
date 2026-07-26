@@ -15,6 +15,7 @@ const ERROR_CODE_MAP: Record<string, string> = {
   [HttpStatus.NOT_FOUND]: 'NOT_FOUND',
   [HttpStatus.CONFLICT]: 'CONFLICT',
   [HttpStatus.UNPROCESSABLE_ENTITY]: 'VALIDATION_ERROR',
+  [HttpStatus.PAYLOAD_TOO_LARGE]: 'PAYLOAD_TOO_LARGE',
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'INTERNAL',
 };
 
@@ -48,6 +49,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
           code = 'VALIDATION_ERROR';
         }
       }
+    } else if (isPayloadTooLargeError(exception)) {
+      // body-parser (express) бросает не-HttpException ошибку при превышении лимита тела запроса
+      status = HttpStatus.PAYLOAD_TOO_LARGE;
+      code = 'PAYLOAD_TOO_LARGE';
+      message = 'Тело запроса слишком большое';
     }
 
     const errorResponse: ApiError = {
@@ -56,4 +62,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     response.status(status).json(errorResponse);
   }
+}
+
+function isPayloadTooLargeError(exception: unknown): boolean {
+  if (!(exception instanceof Error)) return false;
+  const err = exception as Error & { type?: string; status?: number };
+  return err.type === 'entity.too.large' || err.status === 413;
 }

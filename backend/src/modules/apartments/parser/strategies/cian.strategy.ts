@@ -455,7 +455,7 @@ export class CianParser extends BaseListingParser {
   }
 
   // ─── DOM fallback ───────────────────────────────────────────────────────
-  private async extractFromDom(page: import('playwright').Page, sourceUrl: string): Promise<ParsedListing> {
+  private async extractFromDom(page: import('rebrowser-playwright').Page, sourceUrl: string): Promise<ParsedListing> {
     const data = await page.evaluate(() => {
       const text = (sel: string) => document.querySelector(sel)?.textContent?.trim() ?? null;
       const allText = (sel: string) => Array.from(document.querySelectorAll(sel))

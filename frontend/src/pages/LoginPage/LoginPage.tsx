@@ -41,10 +41,10 @@ export function LoginPage() {
             name="login"
             rules={[{ required: true, message: 'Введите логин или email' }]}
           >
-            <Input prefix={<UserOutlined style={{ color: '#94a3b8' }} />} placeholder="Логин или Email" size="large" />
+            <Input prefix={<UserOutlined />} placeholder="Логин или Email" size="large" />
           </Form.Item>
           <Form.Item name="password" rules={[{ required: true, message: 'Введите пароль' }]}>
-            <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Пароль" size="large" />
+            <Input.Password prefix={<LockOutlined />} placeholder="Пароль" size="large" />
           </Form.Item>
           <SubmitBtn type="primary" htmlType="submit" loading={loading}>
             Войти

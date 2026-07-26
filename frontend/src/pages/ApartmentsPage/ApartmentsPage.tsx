@@ -2,15 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Table, Tag, Button, Space, Input, Select, Drawer, Form, Modal,
-  message, Popconfirm, Tooltip, Row, Col, Segmented, Image,
+  message, Popconfirm, Tooltip, Row, Col, Segmented, Image, Upload, Pagination,
 } from 'antd';
 import type { TableProps, TableColumnType } from 'antd';
 import {
   PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
   EyeOutlined, EnvironmentOutlined, LinkOutlined, PhoneOutlined,
-  CameraOutlined,
+  CameraOutlined, CodeOutlined, HomeOutlined, BellOutlined,
 } from '@ant-design/icons';
 import { theme } from '../../app/styles/theme';
+import { useAuth } from '../../app/providers/AuthProvider';
 import { flatApi } from '../../entities/Flat/utils/api';
 import {
   isSupportedParseUrl,
@@ -18,7 +19,7 @@ import {
   PARSE_LINK_PLACEHOLDER,
 } from '../../entities/Flat/utils/parseLink';
 import type {
-  Apartment, ApartmentStatus, CreateApartmentPayload, ParsedApartment,
+  Apartment, ApartmentStatus, CreateApartmentPayload, HtmlParseSource, ParsedApartment,
 } from '../../entities/Flat/model/types';
 import {
   PageHeader, PageTitle, FiltersRow, SearchInput, GlassCard,
@@ -26,13 +27,17 @@ import {
   DrawerStyled, FormSection, SectionTitle, EmptyState,
   ModeSwitchWrapper, LinkModeHint, ImportButton, AddApartmentButton,
   PhotoGrid, PhotoTile, PhotoRemoveBtn, PhotoAddRow, PhotoCounter,
-  TitleButton, SourceLinkButton,
+  TitleButton, SourceLinkButton, DesktopList, MobileList, MobileApartmentCard,
+  MobileApartmentImage, MobileCardBody, MobileCardHeader, MobileApartmentTitle,
+  MobilePrice, MobileMeta, MobileTagRow, MobileCardActions, MobileEmptyState,
+  HeaderActions,
+  MobileShell, MobileTopBar, MobileBrand, MobileBrandLogo, MobileBrandCaption,
+  MobileTopActions, MobileBellBtn, MobileAvatar, MobileBody, MobileToolbar,
+  MobileHeading, MobileAddBtn, MobileImportRow, MobileImportBtn, MobileSearch,
+  MobileChips, MobileChip, MobileStatusBadge, MobilePhotoCount, MobilePagination,
 } from './styled';
 
-const STATUS_COLORS: Record<ApartmentStatus, string> = {
-  NEW: '#9FA1FF', ACTIVE: '#34d399', CALLBACK: '#C1EBE9',
-  VIEWING: '#D9F9DF', REJECTED: '#fb7185', DONE: '#6b7280',
-};
+const STATUS_COLORS: Record<ApartmentStatus, string> = theme.colors.status;
 
 function HouseIcon() {
   return (
@@ -66,6 +71,26 @@ const STATUS_LABELS: Record<ApartmentStatus, string> = {
 };
 
 const CURRENCIES = ['EUR', 'USD', 'RUB', 'PLN'];
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
+const STATUS_CHIPS: Array<{ value: ApartmentStatus | ''; label: string }> = [
+  { value: '', label: 'Все' },
+  { value: 'NEW', label: 'Новая' },
+  { value: 'ACTIVE', label: 'Активная' },
+  { value: 'CALLBACK', label: 'Перезвон' },
+  { value: 'VIEWING', label: 'Просмотр' },
+  { value: 'REJECTED', label: 'Отклонена' },
+  { value: 'DONE', label: 'Готова' },
+];
 
 type DrawerMode = 'form' | 'link';
 
@@ -155,10 +180,16 @@ export function ApartmentsPage() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importParsing, setImportParsing] = useState(false);
+  const [htmlImportModalOpen, setHtmlImportModalOpen] = useState(false);
+  const [htmlSource, setHtmlSource] = useState<HtmlParseSource>('avito');
+  const [htmlContent, setHtmlContent] = useState('');
+  const [htmlSourceUrl, setHtmlSourceUrl] = useState('');
+  const [htmlParsing, setHtmlParsing] = useState(false);
   type ApartmentFormValues = Omit<CreateApartmentPayload, 'phones'> & { phones?: string | string[] };
 
 const [form] = Form.useForm<ApartmentFormValues>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -300,6 +331,42 @@ const [form] = Form.useForm<ApartmentFormValues>();
     }
   };
 
+  const loadHtmlFile = async (file: File) => {
+    if (file.size > 2_000_000) {
+      message.error('HTML-файл не должен превышать 2 MB');
+      return Upload.LIST_IGNORE;
+    }
+    setHtmlContent(await file.text());
+    return false;
+  };
+
+  const handleParseHtml = async () => {
+    if (!htmlContent.trim()) {
+      message.warning('Вставьте HTML страницы объявления');
+      return;
+    }
+    setHtmlParsing(true);
+    try {
+      const parsed = await flatApi.parseHtml({
+        source: htmlSource,
+        html: htmlContent,
+        ...(htmlSourceUrl.trim() ? { sourceUrl: htmlSourceUrl.trim() } : {}),
+      });
+      setEditing(null);
+      form.resetFields();
+      applyParsedData(parsed);
+      setDrawerOpen(true);
+      setHtmlImportModalOpen(false);
+      setHtmlContent('');
+      setHtmlSourceUrl('');
+      message.success('Данные из HTML подставлены — проверьте и сохраните');
+    } catch (err: unknown) {
+      handleParseError(err);
+    } finally {
+      setHtmlParsing(false);
+    }
+  };
+
   const handleParseError = (err: unknown) => {
     // axios-ошибка: error.response.data.error.code
     const data = (err as { response?: { data?: { error?: { code?: string; message?: string } } } })?.response?.data;
@@ -342,7 +409,7 @@ const [form] = Form.useForm<ApartmentFormValues>();
                   </SourceLinkButton>
                 </Tooltip>
               )}
-              <TitleButton type="button" onClick={() => openEdit(apt)} title="Редактировать">
+              <TitleButton type="button" onClick={() => navigate(`/apartments/${apt.id}`)} title="Открыть квартиру">
                 {title}
               </TitleButton>
             </AptTitle>
@@ -359,7 +426,7 @@ const [form] = Form.useForm<ApartmentFormValues>();
               )}
               {apt.photos && apt.photos.length > 1 && (
                 <Tooltip title={`Фото: ${apt.photos.length}`}>
-                  <span style={{ fontSize: 11, color: '#B5BAFF' }}><CameraOutlined /> {apt.photos.length}</span>
+                  <span style={{ fontSize: 11, color: theme.colors.primary }}><CameraOutlined /> {apt.photos.length}</span>
                 </Tooltip>
               )}
             </AptMeta>
@@ -384,11 +451,11 @@ const [form] = Form.useForm<ApartmentFormValues>();
       render: (tags: string[]) => (
         <TagPills>
           {tags.slice(0, 2).map((t) => (
-            <Tag key={t} style={{ background: 'rgba(181,186,255,0.16)', border: 'none', color: '#B5BAFF', fontSize: 11 }}>
+            <Tag key={t} style={{ background: theme.colors.primaryFixed, border: 'none', color: theme.colors.onPrimaryFixedVariant, fontSize: 11 }}>
               {t}
             </Tag>
           ))}
-          {tags.length > 2 && <Tag style={{ background: 'transparent', border: 'none', color: '#475569', fontSize: 11 }}>+{tags.length - 2}</Tag>}
+          {tags.length > 2 && <Tag style={{ background: 'transparent', border: 'none', color: theme.colors.text.muted, fontSize: 11 }}>+{tags.length - 2}</Tag>}
         </TagPills>
       ),
     },
@@ -414,55 +481,190 @@ const [form] = Form.useForm<ApartmentFormValues>();
 
   return (
     <div>
-      <PageHeader>
-        <PageTitle>Квартиры</PageTitle>
-        <Space size={12}>
-          <ImportButton type="button" onClick={() => setImportModalOpen(true)}>
-            <LinkOutlined /> Импорт по ссылке
-          </ImportButton>
-          <AddApartmentButton type="primary" icon={<PlusOutlined />} onClick={openCreate} size="large"
-            style={{ background: theme.gradients.accent, border: 'none', height: 44, paddingInline: 24 }}>
-            Добавить квартиру
-          </AddApartmentButton>
-        </Space>
-      </PageHeader>
+      <DesktopList>
+        <PageHeader>
+          <PageTitle>Квартиры</PageTitle>
+          <HeaderActions>
+            <ImportButton type="button" onClick={() => setImportModalOpen(true)}>
+              <LinkOutlined /> Импорт по ссылке
+            </ImportButton>
+            <ImportButton type="button" onClick={() => setHtmlImportModalOpen(true)}>
+              <CodeOutlined /> Добавить HTML
+            </ImportButton>
+            <AddApartmentButton type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+              Добавить квартиру
+            </AddApartmentButton>
+          </HeaderActions>
+        </PageHeader>
 
-      <FiltersRow>
-        <SearchInput
-          placeholder="Поиск по названию, городу..."
-          prefix={<SearchOutlined style={{ color: theme.colors.text.muted }} />}
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          allowClear
-        />
-        <Select
-          placeholder="Статус"
-          allowClear
-          style={{ width: 160 }}
-          value={statusFilter || undefined}
-          onChange={(v) => { setStatusFilter(v ?? ''); setPage(1); }}
-          options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
-        />
-      </FiltersRow>
+        <FiltersRow>
+          <SearchInput
+            placeholder="Поиск по названию, городу..."
+            prefix={<SearchOutlined style={{ color: theme.colors.text.muted }} />}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            allowClear
+          />
+          <Select
+            placeholder="Статус"
+            allowClear
+            style={{ width: 160 }}
+            value={statusFilter || undefined}
+            onChange={(v) => { setStatusFilter(v ?? ''); setPage(1); }}
+            options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+          />
+        </FiltersRow>
 
-      <GlassCard>
-        <Table
-          columns={columns}
-          dataSource={data}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            current: page,
-            pageSize,
-            total,
-            showSizeChanger: true,
-            showTotal: (t, range) => `${range[0]}–${range[1]} из ${t}`,
-            onChange: (p, ps) => { setPage(p); setPageSize(ps); },
-          }}
-          scroll={{ x: 700 }}
-          locale={{ emptyText: <EmptyState><HouseIcon />Квартиры не найдены</EmptyState> }}
-        />
-      </GlassCard>
+        <GlassCard>
+          <Table
+            columns={columns}
+            dataSource={data}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: page,
+              pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: (t, range) => `${range[0]}–${range[1]} из ${t}`,
+              onChange: (p, ps) => { setPage(p); setPageSize(ps); },
+            }}
+            scroll={{ x: 700 }}
+            locale={{ emptyText: <EmptyState><HouseIcon />Квартиры не найдены</EmptyState> }}
+          />
+        </GlassCard>
+      </DesktopList>
+
+      <MobileShell>
+        <MobileTopBar>
+          <MobileBrand>
+            <MobileBrandLogo><HomeOutlined /></MobileBrandLogo>
+            <div>
+              <div>FlatFinder</div>
+              <MobileBrandCaption>Совместный поиск</MobileBrandCaption>
+            </div>
+          </MobileBrand>
+          <MobileTopActions>
+            <MobileBellBtn type="button" aria-label="Уведомления">
+              <BellOutlined />
+            </MobileBellBtn>
+            <MobileAvatar size={38}>{user ? initials(user.name) : 'FF'}</MobileAvatar>
+          </MobileTopActions>
+        </MobileTopBar>
+
+        <MobileBody>
+          <MobileToolbar>
+            <MobileHeading>
+              Квартиры
+              <span>{total} {total === 1 ? 'объявление' : 'объявлений'}</span>
+            </MobileHeading>
+            <MobileAddBtn type="button" onClick={openCreate}>
+              <PlusOutlined /> Добавить
+            </MobileAddBtn>
+          </MobileToolbar>
+
+          <MobileImportRow>
+            <MobileImportBtn type="button" onClick={() => setImportModalOpen(true)}>
+              <LinkOutlined /> Импорт по ссылке
+            </MobileImportBtn>
+            <MobileImportBtn type="button" onClick={() => setHtmlImportModalOpen(true)}>
+              <CodeOutlined /> Добавить HTML
+            </MobileImportBtn>
+          </MobileImportRow>
+
+          <MobileSearch
+            placeholder="Поиск по названию, городу..."
+            prefix={<SearchOutlined style={{ color: theme.colors.text.muted }} />}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            allowClear
+          />
+
+          <MobileChips>
+            {STATUS_CHIPS.map((chip) => (
+              <MobileChip
+                key={chip.value || 'all'}
+                type="button"
+                $active={statusFilter === chip.value}
+                onClick={() => { setStatusFilter(chip.value); setPage(1); }}
+              >
+                {chip.label}
+              </MobileChip>
+            ))}
+          </MobileChips>
+
+          <MobileList aria-label="Список квартир">
+            {loading ? (
+              <MobileEmptyState>Загружаем квартиры…</MobileEmptyState>
+            ) : data.length === 0 ? (
+              <MobileEmptyState><HouseIcon />Квартиры не найдены</MobileEmptyState>
+            ) : (
+              data.map((apt) => (
+                <MobileApartmentCard key={apt.id}>
+                  <MobileApartmentImage $status={STATUS_COLORS[apt.status]}>
+                    {apt.photos?.[0] ? (
+                      <img src={apt.photos[0]} alt="" loading="lazy" />
+                    ) : (
+                      '🏠'
+                    )}
+                    <MobileStatusBadge>{STATUS_LABELS[apt.status]}</MobileStatusBadge>
+                    {apt.photos && apt.photos.length > 1 && (
+                      <MobilePhotoCount><CameraOutlined /> {apt.photos.length}</MobilePhotoCount>
+                    )}
+                  </MobileApartmentImage>
+                  <MobileCardBody>
+                    <MobileCardHeader>
+                      <MobileApartmentTitle type="button" onClick={() => navigate(`/apartments/${apt.id}`)}>
+                        {apt.title}
+                      </MobileApartmentTitle>
+                      <MobilePrice>{apt.price.toLocaleString('ru-RU')} {apt.currency}</MobilePrice>
+                    </MobileCardHeader>
+                    <MobileMeta>
+                      <span><EnvironmentOutlined /> {apt.city}{apt.district ? `, ${apt.district}` : ''}</span>
+                      <span>{apt.rooms === 0 ? 'Студия' : apt.rooms !== undefined ? `${apt.rooms} ком.` : 'Комнаты не указаны'}</span>
+                      {apt.area && <span>{apt.area} м²</span>}
+                      {apt.floor && <span>эт. {apt.floor}/{apt.totalFloors ?? '?'}</span>}
+                      {apt.phones && apt.phones.length > 0 && (
+                        <span><PhoneOutlined /> {apt.phones[0]}</span>
+                      )}
+                    </MobileMeta>
+                    {apt.tags.length > 0 && (
+                      <MobileTagRow>
+                        {apt.tags.slice(0, 3).map((tag) => <Tag key={tag}>{tag}</Tag>)}
+                        {apt.tags.length > 3 && <Tag>+{apt.tags.length - 3}</Tag>}
+                      </MobileTagRow>
+                    )}
+                    <MobileCardActions>
+                      {apt.sourceUrl && (
+                        <Tooltip title="Открыть источник">
+                          <Button icon={<LinkOutlined />} aria-label="Открыть источник" onClick={() => window.open(apt.sourceUrl, '_blank', 'noopener,noreferrer')} />
+                        </Tooltip>
+                      )}
+                      <Button icon={<EyeOutlined />} aria-label="Просмотр квартиры" onClick={() => navigate(`/apartments/${apt.id}`)} />
+                      <Button icon={<EditOutlined />} aria-label="Редактировать квартиру" onClick={() => openEdit(apt)} />
+                      <Popconfirm title="Удалить?" onConfirm={() => handleDelete(apt.id)} okText="Да" cancelText="Нет">
+                        <Button danger icon={<DeleteOutlined />} aria-label="Удалить квартиру" />
+                      </Popconfirm>
+                    </MobileCardActions>
+                  </MobileCardBody>
+                </MobileApartmentCard>
+              ))
+            )}
+          </MobileList>
+
+          {!loading && total > pageSize && (
+            <MobilePagination>
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={total}
+                simple
+                onChange={(p) => setPage(p)}
+              />
+            </MobilePagination>
+          )}
+        </MobileBody>
+      </MobileShell>
 
       <DrawerStyled
         title={editing ? 'Редактировать квартиру' : 'Новая квартира'}
@@ -633,6 +835,54 @@ const [form] = Form.useForm<ApartmentFormValues>();
           </Form>
         )}
       </DrawerStyled>
+
+      <Modal
+        title={<><CodeOutlined /> Импорт квартиры из HTML</>}
+        open={htmlImportModalOpen}
+        onCancel={() => {
+          setHtmlImportModalOpen(false);
+          setHtmlContent('');
+          setHtmlSourceUrl('');
+        }}
+        onOk={handleParseHtml}
+        okText="Разобрать HTML"
+        cancelText="Отмена"
+        confirmLoading={htmlParsing}
+        okButtonProps={{
+          disabled: !htmlContent.trim(),
+          style: { background: theme.gradients.accent, border: 'none', color: '#fff' },
+        }}
+        width={720}
+        destroyOnClose
+      >
+        <p style={{ color: theme.colors.text.secondary, marginBottom: 12 }}>
+          Выберите площадку и вставьте HTML сохранённой страницы объявления. Разбор выполняется на сервере.
+        </p>
+        <Segmented
+          value={htmlSource}
+          onChange={(value) => setHtmlSource(value as HtmlParseSource)}
+          options={[
+            { value: 'avito', label: 'Avito' },
+            { value: 'domclick', label: 'DomClick' },
+          ]}
+          block
+          style={{ marginBottom: 12 }}
+        />
+        <Input
+          placeholder="Исходная ссылка (необязательно)"
+          value={htmlSourceUrl}
+          onChange={(event) => setHtmlSourceUrl(event.target.value)}
+          style={{ marginBottom: 12 }}
+        />
+        <Upload
+          accept=".html,.htm,text/html"
+          beforeUpload={loadHtmlFile}
+          showUploadList={false}
+          maxCount={1}
+        >
+          <Button icon={<CodeOutlined />}>Загрузить HTML-файл</Button>
+        </Upload>
+      </Modal>
 
       <Modal
         title={<><LinkOutlined /> Импорт квартиры по ссылке</>}

@@ -24,7 +24,9 @@ dayjs.extend(relativeTime);
 dayjs.locale('ru');
 
 const STATUS_COLORS: Record<ReminderStatus, string> = {
-  PENDING: '#9FA1FF', DONE: '#34d399', CANCELED: '#6b7280',
+  PENDING: theme.colors.primary,
+  DONE: theme.colors.status.ACTIVE,
+  CANCELED: theme.colors.status.DONE,
 };
 const STATUS_LABELS: Record<ReminderStatus, string> = {
   PENDING: 'Ожидает', DONE: 'Выполнено', CANCELED: 'Отменено',
@@ -139,12 +141,12 @@ export function RemindersPage() {
                 </ReminderInfo>
                 <Space>
                   <Button
-                    size="small" icon={<CheckOutlined />}
+                    size="small"
+                    shape="circle"
+                    icon={<CheckOutlined />}
                     onClick={() => handleStatus(r, 'DONE')}
-                    style={{ color: '#34d399' }}
-                  >
-                    Выполнено
-                  </Button>
+                    style={{ borderColor: theme.colors.text.primary, color: theme.colors.text.primary }}
+                  />
                   <Popconfirm title="Отменить?" onConfirm={() => handleStatus(r, 'CANCELED')} okText="Да" cancelText="Нет">
                     <Button size="small" danger icon={<DeleteOutlined />} />
                   </Popconfirm>
@@ -187,7 +189,7 @@ export function RemindersPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'radial-gradient(circle, rgba(159,161,255,0.18), rgba(159,161,255,0.04))',
+                background: 'radial-gradient(circle, rgba(150, 67, 37, 0.14), rgba(150, 67, 37, 0.03))',
                 marginBottom: 16,
               }}
             >

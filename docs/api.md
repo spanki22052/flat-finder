@@ -75,6 +75,7 @@ Endpoints:
 - `DELETE /apartments/:id`.
 - `GET /apartments/:id/next-reminder` — возвращает ближайшее `PENDING` напоминание, привязанное к квартире, у которого `dueAt >= now()`. Ответ: `{ data: Reminder | null }` (полная форма Reminder; `null` если ничего не запланировано).
 - `POST /apartments/parse-link` — body `{ url: string }`. Парсит объявление с поддерживаемого источника и возвращает поля для префилла формы (см. секцию [Parse Link](#parse-link)).
+- `POST /apartments/parse-html` — body `{ source: "avito" | "domclick", html: string, sourceUrl?: string }`. Разбирает сохранённый HTML карточки без загрузки сайта; возвращает поля для префилла формы.
 
 ## Tags & Statuses
 
@@ -167,6 +168,25 @@ UI flow:
 При создании квартиры фронт должен проставить `source: 'LINK'` и `sourceUrl`, чтобы в БД сохранилось происхождение объявления.
 
 Парсер пытается извлечь телефон(ы) из `description` страницы (российские форматы `+7…` / `8…`); найденные номера возвращаются в `phones`, нормализованные к виду `+7XXXXXXXXXX`.
+
+## Parse HTML
+
+Endpoint: `POST /api/v1/apartments/parse-html`.
+
+Запрос:
+
+```
+POST /apartments/parse-html
+{
+  "source": "avito",
+  "html": "<!doctype html><html>...</html>",
+  "sourceUrl": "https://www.avito.ru/moskva/kvartiry/..."
+}
+```
+
+`source` обязателен: `avito` или `domclick`. `sourceUrl` необязателен: без него в результате будет URL главной страницы выбранного источника. Сервер не выполняет сетевой запрос к площадке, а разбирает переданный HTML и возвращает тот же объект, что `parse-link`.
+
+Ошибки: `PARSER_INVALID_PAGE` (`422`), `PARSER_BLOCKED` (`502`), `PARSER_FAILED` (`502`).
 
 ## Versioning
 

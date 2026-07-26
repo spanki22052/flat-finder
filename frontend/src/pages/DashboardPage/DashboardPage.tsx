@@ -1,220 +1,304 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Tag, Spin } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import { Avatar, Empty, Spin } from 'antd';
 import {
-  HomeOutlined, ClockCircleOutlined,
-  ArrowUpOutlined, ArrowDownOutlined, RiseOutlined,
+  BellOutlined,
+  CalendarOutlined,
+  HomeOutlined,
+  PlusOutlined,
+  RightOutlined,
+  StarFilled,
 } from '@ant-design/icons';
-import { theme } from '../../app/styles/theme';
-import { remindersApi } from '../../shared/api/endpoints';
-import { flatApi } from '../../entities/Flat/utils/api';
-import type { ApartmentStatus } from '../../entities/Flat/model/types';
-import type { Reminder } from '../../shared/api/types';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { flatApi } from '@/entities/Flat/utils/api';
+import type { Apartment, ApartmentStatus } from '@/entities/Flat/model/types';
+import { remindersApi } from '@/shared/api/endpoints';
+import type { Reminder } from '@/shared/api/types';
 import {
-  PageWrap, PageTitle, PageSubtitle, BentoGrid,
-  StatCard, StatCardIcon, StatValue, StatLabel, StatTrend, CardTitle,
-  AptCard, AptThumb, AptInfo, AptTitle, AptMeta, AptPrice, ArrowIcon,
-  AptList, ReminderItem, ReminderDot, ReminderInfo, ReminderTitle, ReminderTime,
-  SectionHeader, SeeAllLink, CenterSpin,
+  ActivityAvatar,
+  ActivityContent,
+  ActivityFeed,
+  ActivityItem,
+  ActivityText,
+  ActivityTime,
+  AddListingButton,
+  ApartmentCard,
+  ApartmentCardImage,
+  ApartmentCardInfo,
+  ApartmentCardLocation,
+  ApartmentCardPrice,
+  ApartmentCardTitle,
+  ApartmentsRail,
+  AvatarInitials,
+  CenterSpin,
+  ConsensusBadge,
+  ConsensusCard,
+  ConsensusContent,
+  ConsensusIcon,
+  ConsensusText,
+  DashboardDesktop,
+  DashboardMobile,
+  DesktopGrid,
+  DesktopPanel,
+  DesktopStat,
+  EmptyPanel,
+  HeaderAvatar,
+  HeaderBrand,
+  HeaderGreeting,
+  HeaderLogo,
+  HeaderNotification,
+  MobileHeader,
+  MobilePage,
+  ProgressBar,
+  ProgressBarFill,
+  ProgressCard,
+  ProgressCopy,
+  ProgressEyebrow,
+  ProgressHeader,
+  ProgressMeta,
+  ProgressTitle,
+  SectionHeader,
+  SectionTitle,
+  SeeAll,
+  StatsGrid,
+  StatCard,
+  StatIcon,
+  StatLabel,
+  StatValue,
 } from './styled';
 
-const STATUS_COLORS: Record<ApartmentStatus, string> = {
-  NEW: '#9FA1FF',
-  ACTIVE: '#34d399',
-  CALLBACK: '#C1EBE9',
-  VIEWING: '#D9F9DF',
-  REJECTED: '#fb7185',
-  DONE: '#6b7280',
-};
-
 const STATUS_LABELS: Record<ApartmentStatus, string> = {
-  NEW: 'Новые',
-  ACTIVE: 'Активные',
+  NEW: 'Новая',
+  ACTIVE: 'В работе',
   CALLBACK: 'Перезвон',
   VIEWING: 'Просмотр',
-  REJECTED: 'Отклонены',
-  DONE: 'Готовы',
+  REJECTED: 'Отклонена',
+  DONE: 'Готова',
 };
 
-function useCountUp(target: number, duration = 1200) {
-  const [count, setCount] = useState(0);
-  const frameRef = useRef<number>(0);
+const ACTIVITY_COLORS = ['#e77c43', '#8d735b', '#69825b', '#af8a47'];
 
-  useEffect(() => {
-    if (target === 0) { setCount(0); return; }
-    let start: number | null = null;
-    const step = (ts: number) => {
-      if (!start) start = ts;
-      const progress = Math.min((ts - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.round(eased * target));
-      if (progress < 1) frameRef.current = requestAnimationFrame(step);
-    };
-    frameRef.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frameRef.current);
-  }, [target, duration]);
-
-  return count;
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
 }
 
-function StatCardWidget({
-  icon, value, label, trend, accent, gradient, delay,
-}: {
-  icon: React.ReactNode; value: number; label: string;
-  trend?: { up: boolean; text: string }; accent?: string; gradient?: string; delay?: number;
-}) {
-  const counted = useCountUp(value);
+function formatPrice(apartment: Apartment) {
+  return new Intl.NumberFormat('ru-RU', {
+    maximumFractionDigits: 0,
+    style: 'currency',
+    currency: apartment.currency,
+  }).format(apartment.price);
+}
+
+function formatDueAt(dueAt: string) {
+  const date = new Date(dueAt);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return `Сегодня, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  if (date.toDateString() === tomorrow.toDateString()) {
+    return `Завтра, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+function ApartmentRailCard({ apartment }: { apartment: Apartment }) {
+  const location = [apartment.city, apartment.district].filter(Boolean).join(', ');
+  const photo = apartment.photos?.[0];
+
   return (
-    <StatCard
-      $accent={accent}
-      $gradient={gradient}
-      style={{ animationDelay: `${delay ?? 0}s` }}
-    >
-      <StatCardIcon $color={accent ?? '#9FA1FF'}>{icon}</StatCardIcon>
-      <StatValue>{counted.toLocaleString('ru-RU')}</StatValue>
-      <StatLabel>{label}</StatLabel>
-      {trend && (
-        <StatTrend $up={trend.up}>
-          {trend.up ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-          {trend.text}
-        </StatTrend>
-      )}
-    </StatCard>
+    <ApartmentCard to={`/apartments/${apartment.id}`}>
+      <ApartmentCardImage $src={photo}>
+        {!photo && <HomeOutlined aria-hidden />}
+        <ConsensusBadge>{STATUS_LABELS[apartment.status]}</ConsensusBadge>
+      </ApartmentCardImage>
+      <ApartmentCardInfo>
+        <ApartmentCardTitle>{apartment.title}</ApartmentCardTitle>
+        <ApartmentCardLocation>{location || 'Адрес не указан'}</ApartmentCardLocation>
+        <ApartmentCardPrice>{formatPrice(apartment)}</ApartmentCardPrice>
+      </ApartmentCardInfo>
+    </ApartmentCard>
+  );
+}
+
+function ReminderActivity({ reminder, index }: { reminder: Reminder; index: number }) {
+  const name = reminder.assignee?.name ?? 'Вы';
+  return (
+    <ActivityItem>
+      <ActivityAvatar $color={ACTIVITY_COLORS[index % ACTIVITY_COLORS.length]}>
+        <AvatarInitials>{initials(name)}</AvatarInitials>
+      </ActivityAvatar>
+      <ActivityContent>
+        <ActivityText>
+          <strong>{name}</strong> запланировал(а) <span>{reminder.title}</span>
+        </ActivityText>
+        <ActivityTime>{formatDueAt(reminder.dueAt)}</ActivityTime>
+      </ActivityContent>
+    </ActivityItem>
+  );
+}
+
+function MobileDashboard({ apartments, reminders, total }: {
+  apartments: Apartment[];
+  reminders: Reminder[];
+  total: number;
+}) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const activeCount = apartments.filter((apartment) =>
+    ['ACTIVE', 'CALLBACK', 'VIEWING'].includes(apartment.status),
+  ).length;
+  const progress = Math.min(100, Math.max(8, total * 8));
+  const priorityApartments = apartments.filter((apartment) => apartment.status !== 'REJECTED').slice(0, 5);
+
+  return (
+    <DashboardMobile>
+      <MobileHeader>
+        <HeaderBrand>
+          <HeaderLogo><HomeOutlined /></HeaderLogo>
+          <div>
+            <div>FlatFinder</div>
+            <HeaderGreeting>Совместный поиск</HeaderGreeting>
+          </div>
+        </HeaderBrand>
+        <div>
+          <HeaderNotification type="button" aria-label="Уведомления">
+            <BellOutlined />
+          </HeaderNotification>
+          <HeaderAvatar size={38}>{user ? initials(user.name) : <AvatarInitials>FF</AvatarInitials>}</HeaderAvatar>
+        </div>
+      </MobileHeader>
+
+      <MobilePage>
+        <ProgressCard>
+          <ProgressHeader>
+            <div>
+              <ProgressEyebrow>Текущий поиск</ProgressEyebrow>
+              <ProgressTitle>{apartments[0]?.city || 'Квартиры'}</ProgressTitle>
+            </div>
+            <ProgressMeta>{total} объявлений</ProgressMeta>
+          </ProgressHeader>
+          <ProgressBar aria-label={`Найдено ${total} квартир`}>
+            <ProgressBarFill style={{ width: `${progress}%` }} />
+          </ProgressBar>
+          <ProgressCopy>
+            {total > 0
+              ? `В вашей подборке уже ${total} ${total === 1 ? 'квартира' : 'квартир'}. Продолжайте сравнивать варианты.`
+              : 'Добавьте первую квартиру в подборку, чтобы начать поиск.'}
+          </ProgressCopy>
+        </ProgressCard>
+
+        <StatsGrid>
+          <StatCard>
+            <StatIcon $tone="coral"><HomeOutlined /></StatIcon>
+            <div><StatValue>{total}</StatValue><StatLabel>Добавлено</StatLabel></div>
+          </StatCard>
+          <StatCard>
+            <StatIcon $tone="sage"><CalendarOutlined /></StatIcon>
+            <div><StatValue>{activeCount}</StatValue><StatLabel>В работе</StatLabel></div>
+          </StatCard>
+        </StatsGrid>
+
+        <ConsensusCard to="/apartments">
+          <ConsensusIcon><StarFilled /></ConsensusIcon>
+          <ConsensusContent>
+            <ConsensusText>{priorityApartments.length || 0} вариантов в приоритете</ConsensusText>
+            <span>Просмотрите актуальную подборку</span>
+          </ConsensusContent>
+          <RightOutlined aria-hidden />
+        </ConsensusCard>
+
+        <SectionHeader>
+          <SectionTitle>Приоритетные варианты</SectionTitle>
+          <SeeAll to="/apartments">Все</SeeAll>
+        </SectionHeader>
+        {priorityApartments.length ? (
+          <ApartmentsRail>{priorityApartments.map((apartment) => <ApartmentRailCard key={apartment.id} apartment={apartment} />)}</ApartmentsRail>
+        ) : (
+          <EmptyPanel><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Пока нет квартир" /></EmptyPanel>
+        )}
+
+        <SectionHeader>
+          <SectionTitle>Ближайшие действия</SectionTitle>
+          <SeeAll to="/reminders">Все</SeeAll>
+        </SectionHeader>
+        {reminders.length ? (
+          <ActivityFeed>{reminders.slice(0, 4).map((reminder, index) => <ReminderActivity key={reminder.id} reminder={reminder} index={index} />)}</ActivityFeed>
+        ) : (
+          <EmptyPanel><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет активных напоминаний" /></EmptyPanel>
+        )}
+
+        <AddListingButton type="button" onClick={() => navigate('/apartments')}>
+          <PlusOutlined /> Добавить квартиру
+        </AddListingButton>
+      </MobilePage>
+    </DashboardMobile>
+  );
+}
+
+function DesktopDashboard({ apartments, reminders, total }: {
+  apartments: Apartment[];
+  reminders: Reminder[];
+  total: number;
+}) {
+  return (
+    <DashboardDesktop>
+      <h1>Дашборд</h1>
+      <p>Обзор текущей подборки квартир</p>
+      <DesktopGrid>
+        <DesktopStat><HomeOutlined /><strong>{total}</strong><span>Всего квартир</span></DesktopStat>
+        <DesktopStat><CalendarOutlined /><strong>{reminders.length}</strong><span>Напоминаний</span></DesktopStat>
+        <DesktopPanel>
+          <SectionHeader><SectionTitle>Последние квартиры</SectionTitle><SeeAll to="/apartments">Все</SeeAll></SectionHeader>
+          {apartments.length ? <ApartmentsRail>{apartments.map((apartment) => <ApartmentRailCard key={apartment.id} apartment={apartment} />)}</ApartmentsRail> : <Empty description="Нет квартир" />}
+        </DesktopPanel>
+      </DesktopGrid>
+    </DashboardDesktop>
   );
 }
 
 export function DashboardPage() {
-  const [apartments, setApartments] = useState<import('../../entities/Flat/model/types').Apartment[]>([]);
+  const [apartments, setApartments] = useState<Apartment[]>([]);
   const [total, setTotal] = useState(0);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
-      flatApi.getList({ pageSize: 5 }),
+      flatApi.getList({ pageSize: 12 }),
       remindersApi.list({ status: 'PENDING' }),
     ])
-      .then(([aptRes, remRes]) => {
-        setApartments(aptRes.data);
-        setTotal(aptRes.meta.total);
-        setReminders(remRes.data.data.slice(0, 5));
+      .then(([apartmentsResponse, remindersResponse]) => {
+        setApartments(apartmentsResponse.data);
+        setTotal(apartmentsResponse.meta.total);
+        setReminders(remindersResponse.data.data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const byStatus = apartments.reduce<Record<ApartmentStatus, number>>((acc, a) => {
-    acc[a.status] = (acc[a.status] ?? 0) + 1;
-    return acc;
-  }, {} as Record<ApartmentStatus, number>);
-
-  const activeCount = total > 0 ? (byStatus['ACTIVE'] ?? 0) + (byStatus['CALLBACK'] ?? 0) + (byStatus['VIEWING'] ?? 0) : 0;
+  const sortedApartments = useMemo(
+    () => [...apartments].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()),
+    [apartments],
+  );
 
   if (loading) {
-    return (
-      <CenterSpin>
-        <Spin size="large" />
-      </CenterSpin>
-    );
+    return <CenterSpin><Spin size="large" /></CenterSpin>;
   }
 
   return (
-    <PageWrap>
-      <PageTitle>Дашборд</PageTitle>
-      <PageSubtitle>Обзор ваших квартир и активности</PageSubtitle>
-
-      {/* Bento Stats */}
-      <BentoGrid>
-        <StatCardWidget
-          icon={<HomeOutlined />}
-          value={total}
-          label="Всего квартир"
-          accent="#9FA1FF"
-          gradient={theme.colors.bg.card}
-          delay={0.05}
-        />
-        <StatCardWidget
-          icon={<RiseOutlined />}
-          value={activeCount}
-          label="В работе"
-          accent="#34d399"
-          trend={{ up: true, text: '+3 за неделю' }}
-          delay={0.1}
-        />
-        <StatCardWidget
-          icon={<ClockCircleOutlined />}
-          value={reminders.length}
-          label="Активных напоминаний"
-          accent="#C1EBE9"
-          delay={0.2}
-        />
-
-        {/* Recent apartments */}
-        <StatCard $span={2} style={{ animationDelay: '0.25s' }}>
-          <SectionHeader>
-            <CardTitle>Последние квартиры</CardTitle>
-            <SeeAllLink to="/apartments">Все →</SeeAllLink>
-          </SectionHeader>
-          {apartments.length === 0 ? (
-            <div style={{ color: theme.colors.text.muted, fontSize: 14 }}>Нет квартир</div>
-          ) : (
-            <AptList>
-              {apartments.slice(0, 4).map((a) => (
-                <AptCard key={a.id} to={`/apartments/${a.id}`}>
-                  <AptThumb $color={STATUS_COLORS[a.status]} aria-hidden>
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STATUS_COLORS[a.status]} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 11.5 12 4l9 7.5" />
-                      <path d="M5 10.5V20h14v-9.5" />
-                      <path d="M10 20v-5h4v5" />
-                    </svg>
-                  </AptThumb>
-                  <AptInfo>
-                    <AptTitle>{a.title}</AptTitle>
-                    <AptMeta>{a.city}{a.district ? ` · ${a.district}` : ''}</AptMeta>
-                  </AptInfo>
-                  <div style={{ textAlign: 'right' }}>
-                    <AptPrice>{a.price.toLocaleString('ru-RU')} {a.currency}</AptPrice>
-                    <Tag
-                      color={STATUS_COLORS[a.status]}
-                      style={{ fontSize: 10, marginTop: 4, border: 'none' }}
-                    >
-                      {STATUS_LABELS[a.status]}
-                    </Tag>
-                  </div>
-                  <ArrowIcon />
-                </AptCard>
-              ))}
-            </AptList>
-          )}
-        </StatCard>
-
-        {/* Pending reminders */}
-        <StatCard $span={2} style={{ animationDelay: '0.3s' }}>
-          <SectionHeader>
-            <CardTitle>Напоминания</CardTitle>
-            <SeeAllLink to="/reminders">Все →</SeeAllLink>
-          </SectionHeader>
-          {reminders.length === 0 ? (
-            <div style={{ color: theme.colors.text.muted, fontSize: 14 }}>Нет активных напоминаний</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {reminders.map((r) => {
-                const overdue = new Date(r.dueAt) < new Date();
-                return (
-                  <ReminderItem key={r.id}>
-                    <ReminderDot $color={overdue ? '#fb7185' : '#9FA1FF'} />
-                    <ReminderInfo>
-                      <ReminderTitle>{r.title}</ReminderTitle>
-                      <ReminderTime>
-                        {new Date(r.dueAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </ReminderTime>
-                    </ReminderInfo>
-                  </ReminderItem>
-                );
-              })}
-            </div>
-          )}
-        </StatCard>
-      </BentoGrid>
-    </PageWrap>
+    <>
+      <MobileDashboard apartments={sortedApartments} reminders={reminders} total={total} />
+      <DesktopDashboard apartments={sortedApartments.slice(0, 5)} reminders={reminders} total={total} />
+    </>
   );
 }

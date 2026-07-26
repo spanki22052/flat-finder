@@ -19,8 +19,11 @@ import type { Reminder } from '../../shared/api/types';
 import {
   PageWrap, HeroCard, HeroInner, HeroMain, HeroTitle, HeroTitleRow, SourceLinkIcon, HeroMeta, PriceDisplay, TagPills,
   SectionCard, SectionTitle, BackBtn,
-  GalleryGrid, GalleryImage, MeetingBlock, MeetingLabel, MeetingTime, MeetingEmpty, MeetingActions,
-  MeetingTitle, ExpandableWrap, DescriptionText, ExpandBtn,
+  GalleryGrid, GalleryImage, DescriptionText, ExpandableWrap, ExpandBtn,
+  PlanCta, ScheduledCard, ScheduledAccent, ScheduledDayTile,
+  ScheduledDayNumber, ScheduledDayMonth, ScheduledBody, ScheduledEyebrow,
+  ScheduledTime, ScheduledRelative, ScheduledTitle, ScheduledActions,
+  GalleryMore, GalleryMoreLink,
 } from './styled';
 
 dayjs.extend(relativeTime);
@@ -58,10 +61,7 @@ function ExpandableDescription({ text }: { text: string }) {
   );
 }
 
-const STATUS_COLORS: Record<ApartmentStatus, string> = {
-  NEW: '#9FA1FF', ACTIVE: '#34d399', CALLBACK: '#C1EBE9',
-  VIEWING: '#D9F9DF', REJECTED: '#fb7185', DONE: '#6b7280',
-};
+const STATUS_COLORS: Record<ApartmentStatus, string> = theme.colors.status;
 const STATUS_LABELS: Record<ApartmentStatus, string> = {
   NEW: 'Новая', ACTIVE: 'Активная', CALLBACK: 'Перезвон',
   VIEWING: 'Просмотр', REJECTED: 'Отклонена', DONE: 'Готова',
@@ -75,6 +75,8 @@ export function ApartmentDetailPage() {
   const [nextReminder, setNextReminder] = useState<Reminder | null>(null);
   const [meetingModalOpen, setMeetingModalOpen] = useState(false);
   const [meetingForm] = Form.useForm();
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [photoViewerIndex, setPhotoViewerIndex] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -192,30 +194,32 @@ export function ApartmentDetailPage() {
                 {STATUS_LABELS[apt.status]}
               </Tag>
               {apt.tags.map((t: string) => (
-                <Tag key={t} style={{ background: 'rgba(181,186,255,0.16)', border: 'none', color: '#B5BAFF' }}>
+                <Tag key={t} style={{ background: theme.colors.primaryFixed, border: 'none', color: theme.colors.onPrimaryFixedVariant }}>
                   {t}
                 </Tag>
               ))}
             </Space>
           </HeroMain>
 
-          <MeetingBlock>
-            <MeetingLabel>
-              <CalendarOutlined style={{ marginRight: 6 }} />
-              Встреча с владельцем
-            </MeetingLabel>
-            {nextReminder ? (
-              <>
-                <MeetingTime>
-                  {dayjs(nextReminder.dueAt).format('D MMM, HH:mm')}
-                  <span style={{ color: theme.colors.text.muted, fontSize: 12, marginLeft: 8 }}>
-                    ({dayjs(nextReminder.dueAt).fromNow()})
-                  </span>
-                </MeetingTime>
+          {nextReminder ? (
+            <ScheduledCard>
+              <ScheduledAccent aria-hidden />
+              <ScheduledDayTile aria-hidden>
+                <ScheduledDayNumber>{dayjs(nextReminder.dueAt).format('D')}</ScheduledDayNumber>
+                <ScheduledDayMonth>{dayjs(nextReminder.dueAt).format('MMM').replace('.', '')}</ScheduledDayMonth>
+              </ScheduledDayTile>
+              <ScheduledBody>
+                <ScheduledEyebrow>
+                  <CalendarOutlined /> Запланирована
+                </ScheduledEyebrow>
+                <ScheduledTime>
+                  {dayjs(nextReminder.dueAt).format('HH:mm')}
+                  <ScheduledRelative>({dayjs(nextReminder.dueAt).fromNow()})</ScheduledRelative>
+                </ScheduledTime>
                 {nextReminder.title && (
-                  <MeetingTitle>{nextReminder.title}</MeetingTitle>
+                  <ScheduledTitle>{nextReminder.title}</ScheduledTitle>
                 )}
-                <MeetingActions>
+                <ScheduledActions>
                   <Button
                     size="small"
                     icon={<ClockCircleOutlined />}
@@ -233,52 +237,97 @@ export function ApartmentDetailPage() {
                       Отменить
                     </Button>
                   </Popconfirm>
-                </MeetingActions>
-              </>
-            ) : (
-              <>
-                <MeetingEmpty>Не запланирована</MeetingEmpty>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<PlusOutlined />}
-                  onClick={openMeetingModal}
-                  style={{ marginTop: 12, background: theme.gradients.accent, border: 'none' }}
-                  block
-                >
-                  Запланировать
-                </Button>
-              </>
-            )}
-          </MeetingBlock>
+                </ScheduledActions>
+              </ScheduledBody>
+            </ScheduledCard>
+          ) : (
+            <PlanCta type="button" onClick={openMeetingModal}>
+              <PlusOutlined /> Запланировать встречу
+            </PlanCta>
+          )}
         </HeroInner>
       </HeroCard>
 
-      {apt.photos && apt.photos.length > 0 && (
-        <SectionCard>
-          <SectionTitle>Фото ({apt.photos.length})</SectionTitle>
-          <Image.PreviewGroup>
-            <GalleryGrid>
-              {apt.photos.map((src, idx) => (
-                <Image
-                  key={src}
-                  src={src}
-                  alt={`Фото ${idx + 1}`}
-                  width="100%"
-                  height={120}
-                  style={{
-                    objectFit: 'cover',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                  }}
-                  loading="lazy"
-                  preview={{ mask: <span style={{ color: 'white' }}>Открыть</span> }}
-                />
-              ))}
-            </GalleryGrid>
-          </Image.PreviewGroup>
-        </SectionCard>
-      )}
+      {apt.photos && apt.photos.length > 0 && (() => {
+        const PHOTO_LIMIT = 4;
+        const total = apt.photos.length;
+        const visible = apt.photos.slice(0, PHOTO_LIMIT);
+        const overflow = total - PHOTO_LIMIT;
+        return (
+          <SectionCard>
+            <SectionTitle>Фото ({total})</SectionTitle>
+            <Image.PreviewGroup
+              preview={{
+                visible: photoViewerOpen,
+                current: photoViewerIndex,
+                onVisibleChange: (open: boolean) => setPhotoViewerOpen(open),
+                onChange: (current: number) => setPhotoViewerIndex(current),
+              }}
+            >
+              <GalleryGrid>
+                {visible.map((src, idx) => {
+                  const isLast = idx === PHOTO_LIMIT - 1;
+                  const showOverlay = isLast && overflow > 0;
+                  return (
+                    <GalleryImage
+                      key={src}
+                      as="div"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setPhotoViewerIndex(idx); setPhotoViewerOpen(true); }}
+                      onKeyDown={(e: React.KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setPhotoViewerIndex(idx);
+                          setPhotoViewerOpen(true);
+                        }
+                      }}
+                      aria-label={`Фото ${idx + 1}${showOverlay ? `, показать все` : ''}`}
+                    >
+                      <img
+                        src={src}
+                        alt={`Фото ${idx + 1}`}
+                        style={{
+                          width: '100%',
+                          height: 120,
+                          objectFit: 'cover',
+                          borderRadius: 8,
+                          display: 'block',
+                        }}
+                        loading="lazy"
+                      />
+                      {showOverlay && (
+                        <GalleryMore aria-hidden>
+                          +{overflow}
+                          <span>Показать все</span>
+                        </GalleryMore>
+                      )}
+                    </GalleryImage>
+                  );
+                })}
+              </GalleryGrid>
+              {/* Hidden full set: feeds the preview group with all images */}
+              <div style={{ display: 'none' }}>
+                {apt.photos.map((src, idx) => (
+                  <Image
+                    key={`full-${src}`}
+                    src={src}
+                    alt={`Фото ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </Image.PreviewGroup>
+            {overflow > 0 && (
+              <GalleryMoreLink
+                type="button"
+                onClick={() => { setPhotoViewerIndex(PHOTO_LIMIT); setPhotoViewerOpen(true); }}
+              >
+                Показать все фото ({total})
+              </GalleryMoreLink>
+            )}
+          </SectionCard>
+        );
+      })()}
 
       <SectionCard>
         <SectionTitle>Информация</SectionTitle>
@@ -288,7 +337,26 @@ export function ApartmentDetailPage() {
           contentStyle={{ color: theme.colors.text.secondary, fontSize: 14 }}
         >
           <Descriptions.Item label="Источник">
-            {apt.source === 'LINK' ? <a href={apt.sourceUrl}>{apt.sourceUrl}</a> : 'Вручную'}
+            {apt.source === 'LINK' && apt.sourceUrl ? (
+              <a
+                href={apt.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={apt.sourceUrl}
+                style={{
+                  display: 'inline-block',
+                  maxWidth: 280,
+                  verticalAlign: 'bottom',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {apt.sourceUrl.length > 30
+                  ? `${apt.sourceUrl.slice(0, 30)}…`
+                  : apt.sourceUrl}
+              </a>
+            ) : 'Вручную'}
           </Descriptions.Item>
           <Descriptions.Item label="Добавлена">{new Date(apt.createdAt).toLocaleDateString('ru-RU')}</Descriptions.Item>
           {apt.address && <Descriptions.Item label="Адрес">{apt.address}</Descriptions.Item>}
