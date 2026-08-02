@@ -105,6 +105,8 @@ Entity:
   source: "MANUAL" | "LINK"
   sourceUrl?: string
   price: number
+  deposit?: number                 // залог, одноразовый платёж, та же валюта что price
+  agentCommissionPercent?: number  // комиссия риелтору, % от price, одноразовый платёж от арендатора
   currency: "EUR" | "USD" | "RUB" | "PLN"
   city: string
   district?: string
@@ -200,6 +202,8 @@ POST /apartments/parse-link
     "sourceUrl": "https://www.cian.ru/sale/flat/123456/",
     "title": "2-к квартира, 54 м², 5/9 эт.",
     "price": 85000,
+    "deposit": 85000,
+    "agentCommissionPercent": 50,
     "currency": "RUB",
     "city": "Москва",
     "district": "Тверской",
@@ -216,6 +220,8 @@ POST /apartments/parse-link
 ```
 
 Поддерживаемые источники: `cian.ru`, `avito.ru`, `yandex.ru/realty`/`realty.yandex.ru`, `domclick.ru`/`domclick.com` (включая региональные поддомены, напр. `tyumen.domclick.ru/card/rent__flat__…`).
+
+`deposit`/`agentCommissionPercent` заполняются парсером для `cian.ru` (из `bargainTerms.deposit`/`bargainTerms.clientFee` карточки) и `domclick.ru`/`domclick.com` (из `productCard.priceInfo.deposit`/`priceInfo.commission` в `__SSR_STATE__`); для остальных источников поля не возвращаются, пользователь заполняет их вручную при необходимости.
 
 Ошибки:
 

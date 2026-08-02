@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Empty, Spin } from 'antd';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Empty, Spin } from 'antd';
 import {
   BellOutlined,
   CalendarOutlined,
@@ -32,6 +32,10 @@ import {
   ReminderRowTitle, ReminderRowMeta, ReminderDueBadge,
   EmptyBlock,
   QuickLinksRow, QuickLinkCard, QuickLinkIcon, QuickLinkBody,
+  StatusOverview, StatusOverviewHeader, StatusOverviewLead, StatusOverviewTotal,
+  StatusFlow, StatusStageLink, StatusStageTop, StatusStageDot, StatusStageCount,
+  StatusStageLabel, StatusStageHint, StatusArchive, StatusArchiveLink,
+  DashboardError,
   MobileShell, MobileTopBar, MobileBrand, MobileBrandLogo, MobileBrandCaption,
   MobileTopActions, MobileBellBtn, MobileAvatar, MobileBody,
   ProgressCard, ProgressHeader, ProgressEyebrow, ProgressTitle, ProgressMeta,
@@ -100,6 +104,80 @@ function formatDueAt(dueAt: string) {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
+const STATUS_ORDER: ApartmentStatus[] = ['NEW', 'ACTIVE', 'CALLBACK', 'VIEWING', 'DONE', 'REJECTED'];
+const STATUS_TONES: Record<ApartmentStatus, string> = {
+  NEW: '#964325',
+  ACTIVE: '#4f7a52',
+  CALLBACK: '#9b6a2b',
+  VIEWING: '#3d6b8a',
+  DONE: '#88726b',
+  REJECTED: '#ba1a1a',
+};
+
+type StatusCounts = Record<ApartmentStatus, number>;
+
+const EMPTY_STATUS_COUNTS: StatusCounts = {
+  NEW: 0,
+  ACTIVE: 0,
+  CALLBACK: 0,
+  VIEWING: 0,
+  REJECTED: 0,
+  DONE: 0,
+};
+
+const FLOW_STATUSES: ApartmentStatus[] = ['NEW', 'ACTIVE', 'CALLBACK', 'VIEWING'];
+const ARCHIVE_STATUSES: ApartmentStatus[] = ['DONE', 'REJECTED'];
+
+function StatusSummary({ statusCounts, total }: { statusCounts: StatusCounts; total: number }) {
+  return (
+    <StatusOverview>
+      <StatusOverviewHeader>
+        <StatusOverviewLead>
+          <span>Ход подбора</span>
+          <strong>От нового варианта до просмотра</strong>
+        </StatusOverviewLead>
+        <StatusOverviewTotal>{total} вариантов</StatusOverviewTotal>
+      </StatusOverviewHeader>
+
+      <StatusFlow aria-label="Этапы подбора квартиры">
+        {FLOW_STATUSES.map((status) => {
+          const count = statusCounts[status];
+          return (
+            <StatusStageLink
+              key={status}
+              to={`/apartments?status=${status}`}
+              $tone={STATUS_TONES[status]}
+              aria-label={`${STATUS_LABELS[status]}: ${count}`}
+            >
+              <StatusStageTop>
+                <StatusStageDot $tone={STATUS_TONES[status]} />
+                <StatusStageCount>{count}</StatusStageCount>
+              </StatusStageTop>
+              <StatusStageLabel className="stage-label">{STATUS_LABELS[status]}</StatusStageLabel>
+              <StatusStageHint>
+                {status === 'NEW' && 'Нужно разобрать'}
+                {status === 'ACTIVE' && 'Сравниваете'}
+                {status === 'CALLBACK' && 'Ждут звонка'}
+                {status === 'VIEWING' && 'Запланированы'}
+              </StatusStageHint>
+            </StatusStageLink>
+          );
+        })}
+      </StatusFlow>
+
+      <StatusArchive>
+        <span>Завершённые</span>
+        {ARCHIVE_STATUSES.map((status) => (
+          <StatusArchiveLink key={status} to={`/apartments?status=${status}`}>
+            <span className="archive-dot" style={{ background: STATUS_TONES[status] }} />
+            {STATUS_LABELS[status]} <strong>{statusCounts[status]}</strong>
+          </StatusArchiveLink>
+        ))}
+      </StatusArchive>
+    </StatusOverview>
+  );
+}
+
 function ApartmentRailCard({ apartment }: { apartment: Apartment }) {
   const location = [apartment.city, apartment.district].filter(Boolean).join(', ');
   const photo = apartment.photos?.[0];
@@ -138,17 +216,16 @@ function ReminderActivity({ reminder, index }: { reminder: Reminder; index: numb
 
 // ─── Mobile ──────────────────────────────────────────────────────────────────
 
-function MobileDashboard({ apartments, reminders, total }: {
+function MobileDashboard({ apartments, reminders, total, statusCounts }: {
   apartments: Apartment[];
   reminders: Reminder[];
   total: number;
+  statusCounts: StatusCounts;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const activeCount = apartments.filter((apartment) =>
-    ['ACTIVE', 'CALLBACK', 'VIEWING'].includes(apartment.status),
-  ).length;
-  const progress = Math.min(100, Math.max(8, total * 8));
+  const activeCount = statusCounts.ACTIVE + statusCounts.CALLBACK + statusCounts.VIEWING;
+  const progress = total ? Math.round((activeCount / total) * 100) : 0;
   const priorityApartments = apartments.filter((apartment) => apartment.status !== 'REJECTED').slice(0, 5);
 
   return (
@@ -162,7 +239,7 @@ function MobileDashboard({ apartments, reminders, total }: {
           </div>
         </MobileBrand>
         <MobileTopActions>
-          <MobileBellBtn type="button" aria-label="Уведомления">
+          <MobileBellBtn type="button" aria-label="Открыть напоминания" onClick={() => navigate('/reminders')}>
             <BellOutlined />
           </MobileBellBtn>
           <MobileAvatar size={38}>{user ? initials(user.name) : <AvatarInitials>FF</AvatarInitials>}</MobileAvatar>
@@ -178,12 +255,12 @@ function MobileDashboard({ apartments, reminders, total }: {
             </div>
             <ProgressMeta>{total} объявлений</ProgressMeta>
           </ProgressHeader>
-          <ProgressBar aria-label={`Найдено ${total} квартир`}>
+          <ProgressBar aria-label={`${progress}% квартир в работе`}>
             <ProgressBarFill style={{ width: `${progress}%` }} />
           </ProgressBar>
           <ProgressCopy>
             {total > 0
-              ? `В вашей подборке уже ${total} ${total === 1 ? 'квартира' : 'квартир'}. Продолжайте сравнивать варианты.`
+              ? `${progress}% подборки сейчас в работе — ${activeCount} ${activeCount === 1 ? 'вариант' : 'вариантов'} требуют внимания.`
               : 'Добавьте первую квартиру в подборку, чтобы начать поиск.'}
           </ProgressCopy>
         </ProgressCard>
@@ -196,6 +273,14 @@ function MobileDashboard({ apartments, reminders, total }: {
           <StatCard>
             <StatIcon $tone="sage"><CalendarOutlined /></StatIcon>
             <div><StatValue>{activeCount}</StatValue><StatLabel>В работе</StatLabel></div>
+          </StatCard>
+          <StatCard>
+            <StatIcon $tone="coral"><ClockCircleOutlined /></StatIcon>
+            <div><StatValue>{statusCounts.CALLBACK}</StatValue><StatLabel>Перезвонить</StatLabel></div>
+          </StatCard>
+          <StatCard>
+            <StatIcon $tone="sage"><BellOutlined /></StatIcon>
+            <div><StatValue>{reminders.length}</StatValue><StatLabel>Напоминаний</StatLabel></div>
           </StatCard>
         </StatsGrid>
 
@@ -238,17 +323,16 @@ function MobileDashboard({ apartments, reminders, total }: {
 
 // ─── Desktop ─────────────────────────────────────────────────────────────────
 
-function DesktopDashboard({ apartments, reminders, total }: {
+function DesktopDashboard({ apartments, reminders, total, statusCounts }: {
   apartments: Apartment[];
   reminders: Reminder[];
   total: number;
+  statusCounts: StatusCounts;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const activeCount = apartments.filter((apartment) =>
-    ['ACTIVE', 'CALLBACK', 'VIEWING'].includes(apartment.status),
-  ).length;
-  const callbackCount = apartments.filter((apartment) => apartment.status === 'CALLBACK').length;
+  const activeCount = statusCounts.ACTIVE + statusCounts.CALLBACK + statusCounts.VIEWING;
+  const callbackCount = statusCounts.CALLBACK;
   const pendingReminders = reminders.filter((r) => r.status === 'PENDING');
   const greeting = greetingForHour(new Date().getHours());
 
@@ -295,6 +379,8 @@ function DesktopDashboard({ apartments, reminders, total }: {
             </HeroMetaPill>
           </HeroMetaRow>
         </Hero>
+
+        <StatusSummary statusCounts={statusCounts} total={total} />
 
         <DesktopGrid>
           <MainColumn>
@@ -418,21 +504,36 @@ export function DashboardPage() {
   const [apartments, setApartments] = useState<Apartment[]>([]);
   const [total, setTotal] = useState(0);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>(EMPTY_STATUS_COUNTS);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const [apartmentsResponse, remindersResponse, ...statusResponses] = await Promise.all([
+        flatApi.getList({ pageSize: 100 }),
+        remindersApi.list({ status: 'PENDING' }),
+        ...STATUS_ORDER.map((status) => flatApi.getList({ status, pageSize: 1 })),
+      ]);
+      setApartments(apartmentsResponse.data);
+      setTotal(apartmentsResponse.meta.total);
+      setReminders(remindersResponse.data.data);
+      setStatusCounts(STATUS_ORDER.reduce<StatusCounts>((counts, status, index) => {
+        counts[status] = statusResponses[index].meta.total;
+        return counts;
+      }, { ...EMPTY_STATUS_COUNTS }));
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    Promise.all([
-      flatApi.getList({ pageSize: 12 }),
-      remindersApi.list({ status: 'PENDING' }),
-    ])
-      .then(([apartmentsResponse, remindersResponse]) => {
-        setApartments(apartmentsResponse.data);
-        setTotal(apartmentsResponse.meta.total);
-        setReminders(remindersResponse.data.data);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const sortedApartments = useMemo(
     () => [...apartments].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()),
@@ -443,10 +544,24 @@ export function DashboardPage() {
     return <CenterSpin><Spin size="large" /></CenterSpin>;
   }
 
+  if (error) {
+    return (
+      <DashboardError>
+        <Alert
+          type="error"
+          showIcon
+          message="Не удалось загрузить дашборд"
+          description="Проверьте соединение и попробуйте обновить данные."
+          action={<Button type="primary" onClick={() => void loadDashboard()}>Повторить</Button>}
+        />
+      </DashboardError>
+    );
+  }
+
   return (
     <>
-      <MobileDashboard apartments={sortedApartments} reminders={reminders} total={total} />
-      <DesktopDashboard apartments={sortedApartments.slice(0, 5)} reminders={reminders} total={total} />
+      <MobileDashboard apartments={sortedApartments} reminders={reminders} total={total} statusCounts={statusCounts} />
+      <DesktopDashboard apartments={sortedApartments.slice(0, 5)} reminders={reminders} total={total} statusCounts={statusCounts} />
     </>
   );
 }

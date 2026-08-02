@@ -32,20 +32,14 @@ export const HeroCard = styled.div({
   '@media (max-width: 720px)': { padding: 24 },
 });
 
-export const HeroInner = styled.div<{ $hasSidebar?: boolean }>((props) => ({
+export const HeroInner = styled.div({
   position: 'relative',
   zIndex: 1,
-  display: 'grid',
-  gridTemplateColumns: props.$hasSidebar
-    ? 'minmax(0, 1fr) minmax(240px, 320px)'
-    : 'minmax(0, 1fr)',
-  gap: props.$hasSidebar ? 24 : 0,
-  alignItems: 'flex-start',
+  display: 'block',
   '@media (max-width: 720px)': {
-    gridTemplateColumns: '1fr',
-    gap: 16,
+    display: 'block',
   },
-}));
+});
 
 export const HeroMain = styled.div({
   minWidth: 0,
@@ -141,8 +135,14 @@ export const PriceDisplay = styled.div({
   color: theme.colors.text.primary,
   lineHeight: 1,
   letterSpacing: '-0.06em',
-  marginBottom: 18,
+  marginBottom: 4,
   span: { fontSize: 17, fontWeight: 500, letterSpacing: '-0.02em', color: theme.colors.text.muted },
+});
+
+export const PriceMeta = styled.div({
+  fontSize: 13,
+  color: theme.colors.text.muted,
+  marginBottom: 18,
 });
 
 // ─── Call CTA ────────────────────────────────────────────────────────────────
@@ -448,12 +448,18 @@ export const ScheduledCard = styled.article({
   border: `1px solid ${theme.colors.outlineVariant}`,
   borderRadius: theme.radius.xl,
   padding: '20px 22px 18px',
+  marginBottom: 16,
   display: 'grid',
   gridTemplateColumns: 'auto minmax(0, 1fr)',
   gap: 18,
   alignItems: 'flex-start',
   boxShadow: theme.shadows.soft,
   overflow: 'hidden',
+  '@media (max-width: 720px)': {
+    gridTemplateColumns: 'minmax(0, 1fr)',
+    gap: 12,
+    padding: '16px 16px 14px',
+  },
 });
 
 export const ScheduledAccent = styled.div({

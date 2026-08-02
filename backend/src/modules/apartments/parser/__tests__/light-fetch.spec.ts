@@ -1,5 +1,5 @@
 import {
-  BLOCK_MARKERS, extractInlineConfig, extractJsonLd, extractNextData,
+  BLOCK_MARKERS, extractCianBargainTerms, extractInlineConfig, extractJsonLd, extractNextData,
   getNumber, getString, looksBlocked, normalizeCurrency,
 } from '../utils/light-fetch.js';
 
@@ -106,6 +106,27 @@ describe('getString', () => {
 
   it('returns undefined for non-string leaves', () => {
     expect(getString({ a: { b: 123 } }, ['a', 'b'])).toBeUndefined();
+  });
+});
+
+describe('extractCianBargainTerms', () => {
+  it('extracts deposit and clientFee from bargainTerms block', () => {
+    const html = `<script>window._cianConfig['frontend-offer-card'] = [{"key":"offerData","value":{"offer":{"bargainTerms":${JSON.stringify({
+      price: 28000,
+      deposit: 15000,
+      clientFee: 70,
+      agentFee: 0,
+    })}}}}];</script>`;
+    expect(extractCianBargainTerms(html)).toEqual({ deposit: 15000, agentCommissionPercent: 70 });
+  });
+
+  it('returns empty object when bargainTerms is missing', () => {
+    expect(extractCianBargainTerms('<html></html>')).toEqual({});
+  });
+
+  it('omits fields that are not numbers', () => {
+    const html = `<script>"bargainTerms":${JSON.stringify({ price: 1000 })}</script>`;
+    expect(extractCianBargainTerms(html)).toEqual({});
   });
 });
 

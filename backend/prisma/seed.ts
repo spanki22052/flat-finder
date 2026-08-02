@@ -75,6 +75,8 @@ async function main() {
       title: 'Уютная 2-комната в центре',
       source: 'MANUAL',
       price: 85000,
+      deposit: 85000,
+      agentCommissionPercent: 50,
       currency: 'RUB',
       city: 'Москва',
       district: 'Тверской',

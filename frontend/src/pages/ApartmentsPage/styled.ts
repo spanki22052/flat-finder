@@ -276,6 +276,14 @@ export const PriceTag = styled.div({
   },
 });
 
+export const PriceTagMeta = styled.div({
+  fontSize: 11,
+  fontWeight: 500,
+  color: theme.colors.text.muted,
+  whiteSpace: 'nowrap',
+  marginTop: 2,
+});
+
 export const TagPills = styled.div({
   display: 'flex',
   gap: 4,
@@ -764,6 +772,14 @@ export const MobilePrice = styled.div({
   fontSize: 15,
   fontWeight: 800,
   whiteSpace: 'nowrap',
+});
+
+export const MobilePriceMeta = styled.div({
+  color: theme.colors.text.muted,
+  fontSize: 11,
+  fontWeight: 500,
+  whiteSpace: 'nowrap',
+  textAlign: 'right',
 });
 
 export const MobileMeta = styled.div({

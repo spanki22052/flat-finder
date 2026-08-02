@@ -1,15 +1,12 @@
 import React from 'react';
 import { ConfigProvider, App as AntApp } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
-import 'dayjs/locale/ru';
 import dayjs from 'dayjs';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthProvider';
 import { RoomProvider } from './RoomProvider';
 import { GlobalStyles } from '../styles/GlobalStyles';
-
-dayjs.locale('ru');
 
 const queryClient = new QueryClient({
   defaultOptions: {

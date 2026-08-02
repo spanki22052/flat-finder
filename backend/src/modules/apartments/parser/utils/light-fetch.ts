@@ -178,6 +178,47 @@ export function extractInlineConfig(html: string, varNames: string[]): Record<st
   return null;
 }
 
+/**
+ * CIAN встраивает `"bargainTerms":{"deposit":15000,...,"clientFee":70,...}` внутри
+ * тяжёлого webpack-конфига (`window._cianConfig['frontend-offer-card'] = (...)`),
+ * который не разбирается как обычный JSON через `extractInlineConfig`. Достаём
+ * фрагмент вручную (по балансу скобок) и парсим отдельно.
+ *   deposit    — залог в рублях (одноразовый платёж).
+ *   clientFee  — комиссия риелтору, % от цены, которую платит арендатор.
+ */
+export function extractCianBargainTerms(html: string): { deposit?: number; agentCommissionPercent?: number } {
+  const marker = '"bargainTerms":';
+  const markerIdx = html.indexOf(`${marker}{`);
+  if (markerIdx === -1) return {};
+
+  const start = markerIdx + marker.length;
+  let depth = 0;
+  let i = start;
+  for (; i < html.length; i += 1) {
+    const c = html[i];
+    if (c === '{') depth += 1;
+    else if (c === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        i += 1;
+        break;
+      }
+    }
+  }
+
+  try {
+    const data = JSON.parse(html.slice(start, i)) as Record<string, unknown>;
+    const deposit = typeof data.deposit === 'number' ? data.deposit : undefined;
+    const agentCommissionPercent = typeof data.clientFee === 'number' ? data.clientFee : undefined;
+    return {
+      ...(deposit !== undefined ? { deposit } : {}),
+      ...(agentCommissionPercent !== undefined ? { agentCommissionPercent } : {}),
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function normalizeCurrency(c: string | undefined | null): Currency {
   const u = (c ?? '').toUpperCase();
   if (u === 'RUB' || u === 'RUR') return 'RUB';

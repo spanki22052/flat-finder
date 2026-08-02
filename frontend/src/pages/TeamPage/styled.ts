@@ -309,13 +309,12 @@ export const RosterList = styled.ul({
   flexDirection: 'column',
   gap: 8,
   minWidth: 0,
-  containerType: 'inline-size',
 });
 
 export const RosterRow = styled(motion.li)<{ $owner?: boolean }>((props) => ({
-  display: 'grid',
-  gridTemplateColumns: '160px minmax(0, 1fr)',
+  display: 'flex',
   alignItems: 'stretch',
+  flexWrap: 'nowrap',
   gap: 0,
   borderRadius: theme.radius.lg,
   background: theme.colors.bg.surfaceLow,
@@ -329,14 +328,8 @@ export const RosterRow = styled(motion.li)<{ $owner?: boolean }>((props) => ({
     boxShadow: theme.shadows.soft,
     transform: 'translateY(-1px)',
   },
-  '@container (max-width: 860px)': {
-    gridTemplateColumns: '120px minmax(0, 1fr)',
-  },
-  '@container (max-width: 640px)': {
-    gridTemplateColumns: 'minmax(0, 1fr)',
-  },
-  [BP.lg]: {
-    gridTemplateColumns: '140px minmax(0, 1fr)',
+  [BP.md]: {
+    flexWrap: 'wrap',
   },
 }));
 
@@ -351,6 +344,9 @@ export const RosterRail = styled.div<{ $owner?: boolean }>((props) => ({
     ? 'linear-gradient(160deg, #f8bb73 0%, #ffddb9 100%)'
     : 'linear-gradient(160deg, #fff8f5 0%, #fbf2ed 100%)',
   borderRight: `1px solid ${props.$owner ? '#f8bb73' : theme.colors.outlineVariant}`,
+  flex: '0 0 auto',
+  width: 160,
+  minWidth: 120,
   '.avatar': {
     width: 56,
     height: 56,
@@ -366,11 +362,21 @@ export const RosterRail = styled.div<{ $owner?: boolean }>((props) => ({
     flexShrink: 0,
   },
   [BP.lg]: {
+    width: 130,
+    minWidth: 110,
     padding: '14px 10px',
     '.avatar': { width: 48, height: 48, fontSize: 16 },
   },
-  '@container (max-width: 640px)': {
-    display: 'none',
+  [BP.md]: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 12,
+    borderRight: 'none',
+    borderBottom: `1px solid ${props.$owner ? '#f8bb73' : theme.colors.outlineVariant}`,
+    padding: '12px 14px',
+    '.avatar': { width: 40, height: 40, fontSize: 14 },
   },
 }));
 
@@ -401,27 +407,16 @@ export const RailTag = styled.div<{ $owner?: boolean }>((props) => ({
 }));
 
 export const RosterBody = styled.div({
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1.6fr) repeat(3, minmax(0, 0.7fr)) auto',
-  gap: 16,
+  display: 'flex',
+  flex: '1 1 auto',
+  flexWrap: 'wrap',
+  gap: 12,
   padding: '16px 20px',
   alignItems: 'center',
   minWidth: 0,
-  '@container (max-width: 960px)': {
-    gridTemplateColumns: 'minmax(0, 1.4fr) repeat(3, minmax(0, 0.7fr))',
-    '> div:last-child': { gridColumn: '1 / -1', justifyContent: 'flex-end' },
-  },
-  '@container (max-width: 640px)': {
-    gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)',
+  [BP.md]: {
     padding: '14px 14px',
     gap: 12,
-    '> div:nth-child(2), > div:nth-child(3), > div:nth-child(4)': {
-      textAlign: 'left',
-    },
-  },
-  [BP.lg]: {
-    gridTemplateColumns: 'minmax(0, 1.4fr) repeat(3, minmax(0, 0.7fr))',
-    padding: '14px 16px',
   },
 });
 
@@ -430,6 +425,7 @@ export const Identity = styled.div({
   flexDirection: 'column',
   gap: 5,
   minWidth: 0,
+  flex: '1 1 220px',
 });
 
 export const NameLine = styled.div({
@@ -539,12 +535,15 @@ export const ActivityCell = styled.div({
   display: 'flex',
   flexDirection: 'column',
   gap: 2,
-  minWidth: 0,
+  minWidth: 88,
+  flex: '0 0 auto',
   paddingLeft: 14,
   borderLeft: `1px dashed ${theme.colors.outlineVariant}`,
-  '@container (max-width: 640px)': {
+  [BP.md]: {
     paddingLeft: 10,
     borderLeft: 'none',
+    minWidth: 0,
+    flex: '1 1 calc((100% - 24px) / 3)',
   },
 });
 
@@ -578,10 +577,12 @@ export const ActionCell = styled.div({
   alignItems: 'center',
   flexShrink: 0,
   minWidth: 0,
-  [BP.lg]: {
-    gridColumn: '1 / -1',
+  marginLeft: 'auto',
+  [BP.md]: {
+    marginLeft: 0,
+    width: '100%',
     justifyContent: 'flex-end',
-    marginTop: 4,
+    paddingTop: 6,
   },
 });
 

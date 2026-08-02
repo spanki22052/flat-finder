@@ -4,17 +4,12 @@ import {
   CheckOutlined, ClockCircleOutlined, WarningOutlined, HomeOutlined, ArrowRightOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/ru';
 import { remindersApi } from '../../../shared/api/endpoints';
 import type { Reminder } from '../../../shared/api/types';
 import {
   Panel, PanelHeader, PanelTitle, PanelCount, PanelList, PanelItem, ItemBody,
   ItemTitle, ItemMeta, ItemTime, ItemApt, ItemActions, MarkDone, PanelFooter, FooterLink,
 } from './NotificationsDropdown/styled';
-
-dayjs.extend(relativeTime);
-dayjs.locale('ru');
 
 interface Props {
   items: Reminder[];

@@ -6,6 +6,8 @@ export class UpdateApartmentDto {
   @IsOptional() @IsEnum(ApartmentSource) source?: ApartmentSource;
   @IsOptional() @IsString() sourceUrl?: string;
   @IsOptional() @IsNumber() price?: number;
+  @IsOptional() @IsNumber() @Min(0) deposit?: number;
+  @IsOptional() @IsNumber() @Min(0) agentCommissionPercent?: number;
   @IsOptional() @IsEnum(Currency) currency?: Currency;
   @IsOptional() @IsString() city?: string;
   @IsOptional() @IsString() district?: string;

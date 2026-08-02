@@ -8,6 +8,7 @@ import { ApartmentStatus, Prisma } from '@prisma/client';
 
 const APARTMENT_SELECT = {
   id: true, title: true, source: true, sourceUrl: true, price: true,
+  deposit: true, agentCommissionPercent: true,
   currency: true, city: true, district: true, address: true,
   rooms: true, area: true, floor: true, totalFloors: true,
   description: true, photos: true, phones: true, status: true,

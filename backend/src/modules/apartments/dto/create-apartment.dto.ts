@@ -6,6 +6,8 @@ export class CreateApartmentDto {
   @IsOptional() @IsEnum(ApartmentSource) source?: ApartmentSource;
   @IsOptional() @IsString() sourceUrl?: string;
   @IsNumber() price!: number;
+  @IsOptional() @IsNumber() @Min(0) deposit?: number;
+  @IsOptional() @IsNumber() @Min(0) agentCommissionPercent?: number;
   @IsOptional() @IsEnum(Currency) currency?: Currency;
   @IsString() city!: string;
   @IsOptional() @IsString() district?: string;

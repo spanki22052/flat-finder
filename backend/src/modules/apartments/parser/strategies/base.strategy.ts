@@ -5,6 +5,10 @@ export interface ParsedListing {
   sourceUrl: string;
   title: string;
   price: number;
+  /** Залог (в той же валюте, что price), одноразовый платёж. */
+  deposit?: number;
+  /** Комиссия риелтору, % от price, одноразовый платёж от арендатора. */
+  agentCommissionPercent?: number;
   currency: Currency;
   city: string;
   district?: string;

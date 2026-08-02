@@ -9,15 +9,14 @@ import {
   CalendarOutlined, PlusOutlined, ClockCircleOutlined, CloseOutlined, LinkOutlined, PhoneOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/ru';
 import { theme } from '../../app/styles/theme';
 import { remindersApi } from '../../shared/api/endpoints';
 import { flatApi } from '../../entities/Flat/utils/api';
+import { getEffectiveMoveInCost } from '../../entities/Flat/utils/price';
 import type { ApartmentStatus } from '../../entities/Flat/model/types';
 import type { Reminder } from '../../shared/api/types';
 import {
-  PageWrap, HeroCard, HeroInner, HeroMain, HeroTitle, HeroTitleRow, SourceLinkIcon, HeroMeta, PriceDisplay, TagPills,
+  PageWrap, HeroCard, HeroInner, HeroMain, HeroTitle, HeroTitleRow, SourceLinkIcon, HeroMeta, PriceDisplay, PriceMeta, TagPills,
   SectionCard, SectionTitle, BackBtn,
   GalleryGrid, GalleryImage, DescriptionText, ExpandableWrap, ExpandBtn,
   PlanCta, ScheduledCard, ScheduledAccent, ScheduledDayTile,
@@ -33,9 +32,6 @@ function formatPhone(phone: string): string {
   if (!m) return phone;
   return `+7 ${m[1]} ${m[2]}-${m[3]}-${m[4]}`;
 }
-
-dayjs.extend(relativeTime);
-dayjs.locale('ru');
 
 const COLLAPSE_LINES = 6;
 
@@ -151,8 +147,49 @@ export function ApartmentDetailPage() {
     <PageWrap>
       <BackBtn to="/apartments">← Квартиры</BackBtn>
 
+      {nextReminder && (
+        <ScheduledCard>
+          <ScheduledAccent aria-hidden />
+          <ScheduledDayTile aria-hidden>
+            <ScheduledDayNumber>{dayjs(nextReminder.dueAt).format('D')}</ScheduledDayNumber>
+            <ScheduledDayMonth>{dayjs(nextReminder.dueAt).format('MMM').replace('.', '')}</ScheduledDayMonth>
+          </ScheduledDayTile>
+          <ScheduledBody>
+            <ScheduledEyebrow>
+              <CalendarOutlined /> Запланирована
+            </ScheduledEyebrow>
+            <ScheduledTime>
+              {dayjs(nextReminder.dueAt).format('HH:mm')}
+              <ScheduledRelative>({dayjs(nextReminder.dueAt).fromNow()})</ScheduledRelative>
+            </ScheduledTime>
+            {nextReminder.title && (
+              <ScheduledTitle>{nextReminder.title}</ScheduledTitle>
+            )}
+            <ScheduledActions>
+              <Button
+                size="small"
+                icon={<ClockCircleOutlined />}
+                onClick={openMeetingModal}
+              >
+                Изменить
+              </Button>
+              <Popconfirm
+                title="Отменить встречу?"
+                onConfirm={handleCancelMeeting}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <Button size="small" danger icon={<CloseOutlined />}>
+                  Отменить
+                </Button>
+              </Popconfirm>
+            </ScheduledActions>
+          </ScheduledBody>
+        </ScheduledCard>
+      )}
+
       <HeroCard>
-        <HeroInner $hasSidebar={!!nextReminder}>
+        <HeroInner>
           <HeroMain>
             <HeroStatusRow>
               <Tag color={STATUS_COLORS[apt.status]} style={{ border: 'none', fontWeight: 600 }}>
@@ -206,6 +243,15 @@ export function ApartmentDetailPage() {
             <PriceDisplay>
               {apt.price.toLocaleString('ru-RU')} <span>{apt.currency}</span>
             </PriceDisplay>
+            {(() => {
+              const effectiveCost = getEffectiveMoveInCost(apt);
+              if (effectiveCost === undefined) return null;
+              return (
+                <PriceMeta>
+                  Действительная стоимость (с залогом{apt.agentCommissionPercent !== undefined ? ' и комиссией риелтору' : ''}): {effectiveCost.toLocaleString('ru-RU')} {apt.currency}
+                </PriceMeta>
+              );
+            })()}
 
             {(apt.phones?.length || 0) > 0 ? (
               <CallRow>
@@ -231,47 +277,6 @@ export function ApartmentDetailPage() {
               )
             )}
           </HeroMain>
-
-          {nextReminder && (
-            <ScheduledCard>
-              <ScheduledAccent aria-hidden />
-              <ScheduledDayTile aria-hidden>
-                <ScheduledDayNumber>{dayjs(nextReminder.dueAt).format('D')}</ScheduledDayNumber>
-                <ScheduledDayMonth>{dayjs(nextReminder.dueAt).format('MMM').replace('.', '')}</ScheduledDayMonth>
-              </ScheduledDayTile>
-              <ScheduledBody>
-                <ScheduledEyebrow>
-                  <CalendarOutlined /> Запланирована
-                </ScheduledEyebrow>
-                <ScheduledTime>
-                  {dayjs(nextReminder.dueAt).format('HH:mm')}
-                  <ScheduledRelative>({dayjs(nextReminder.dueAt).fromNow()})</ScheduledRelative>
-                </ScheduledTime>
-                {nextReminder.title && (
-                  <ScheduledTitle>{nextReminder.title}</ScheduledTitle>
-                )}
-                <ScheduledActions>
-                  <Button
-                    size="small"
-                    icon={<ClockCircleOutlined />}
-                    onClick={openMeetingModal}
-                  >
-                    Изменить
-                  </Button>
-                  <Popconfirm
-                    title="Отменить встречу?"
-                    onConfirm={handleCancelMeeting}
-                    okText="Да"
-                    cancelText="Нет"
-                  >
-                  <Button size="small" danger icon={<CloseOutlined />}>
-                    Отменить
-                  </Button>
-                </Popconfirm>
-              </ScheduledActions>
-            </ScheduledBody>
-          </ScheduledCard>
-          )}
         </HeroInner>
       </HeroCard>
 

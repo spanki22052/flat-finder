@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './app/config/dayjs';
 import { AppProviders } from './app/providers/AppProviders';
 import { AppRouter } from './app/routes/AppRouter';
 

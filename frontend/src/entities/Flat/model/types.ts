@@ -8,6 +8,8 @@ export interface Apartment {
   source: ApartmentSource;
   sourceUrl?: string;
   price: number;
+  deposit?: number;
+  agentCommissionPercent?: number;
   currency: Currency;
   city: string;
   district?: string;
@@ -34,6 +36,8 @@ export interface CreateApartmentPayload {
   source?: ApartmentSource;
   sourceUrl?: string;
   price: number;
+  deposit?: number;
+  agentCommissionPercent?: number;
   currency?: Currency;
   city: string;
   district?: string;
@@ -77,6 +81,8 @@ export interface ParsedApartment {
   sourceUrl: string;
   title: string;
   price: number;
+  deposit?: number;
+  agentCommissionPercent?: number;
   currency: Currency;
   city: string;
   district?: string;

@@ -232,6 +232,174 @@ export const SeeAll = styled(Link)({
   '&:hover': { textDecoration: 'underline' },
 });
 
+export const StatusOverview = styled.section({
+  padding: '22px 24px 18px',
+  borderRadius: theme.radius.xl,
+  background: theme.colors.bg.card,
+  border: `1px solid ${theme.colors.outlineVariant}`,
+  boxShadow: theme.shadows.soft,
+  [BP.sm]: { padding: 16, borderRadius: theme.radius.lg },
+});
+
+export const StatusOverviewHeader = styled.div({
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 16,
+  marginBottom: 22,
+});
+
+export const StatusOverviewLead = styled.div({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+  minWidth: 0,
+  '& > span': {
+    color: theme.colors.primary,
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+  },
+  '& > strong': {
+    color: theme.colors.text.primary,
+    fontSize: 17,
+    lineHeight: 1.2,
+  },
+});
+
+export const StatusOverviewTotal = styled.span({
+  flexShrink: 0,
+  color: theme.colors.text.muted,
+  fontSize: 12,
+  fontWeight: 700,
+  paddingTop: 2,
+});
+
+export const StatusFlow = styled.div({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+  gap: 0,
+  [BP.lg]: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', rowGap: 22 },
+  [BP.sm]: { gridTemplateColumns: '1fr', rowGap: 16 },
+});
+
+export const StatusStageLink = styled(Link)<{ $tone: string }>(({ $tone }) => ({
+  position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 5,
+  minWidth: 0,
+  padding: '0 22px 0 0',
+  color: theme.colors.text.primary,
+  textDecoration: 'none',
+  '&:not(:first-child)': { paddingLeft: 22 },
+  '&:not(:last-child)::after': {
+    content: '→',
+    position: 'absolute',
+    right: 8,
+    top: 5,
+    color: theme.colors.outline,
+    fontSize: 18,
+    fontWeight: 500,
+  },
+  '&:hover .stage-label': { color: $tone },
+  '&:focus-visible': { outline: `2px solid ${$tone}`, outlineOffset: 4, borderRadius: theme.radius.sm },
+  [BP.lg]: {
+    '&:nth-child(odd)': { paddingLeft: 0 },
+    '&:nth-child(even)': { paddingRight: 0 },
+    '&:nth-child(2)::after': { display: 'none' },
+  },
+  [BP.sm]: {
+    padding: '0 0 0 30px !important',
+    '&:not(:first-child)': { paddingLeft: 30 },
+    '&::after, &:not(:last-child)::after': {
+      content: '↓',
+      left: 8,
+      right: 'auto',
+      top: 25,
+      fontSize: 16,
+    },
+  },
+}));
+
+export const StatusStageTop = styled.div({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+  minHeight: 26,
+});
+
+export const StatusStageDot = styled.span<{ $tone: string }>(({ $tone }) => ({
+  width: 12,
+  height: 12,
+  flexShrink: 0,
+  borderRadius: '50%',
+  background: $tone,
+  boxShadow: `0 0 0 5px ${$tone}18`,
+}));
+
+export const StatusStageCount = styled.strong({
+  marginLeft: 'auto',
+  color: theme.colors.text.primary,
+  fontSize: 24,
+  lineHeight: 1,
+  fontWeight: 800,
+  fontVariantNumeric: 'tabular-nums',
+});
+
+export const StatusStageLabel = styled.span({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  color: theme.colors.text.primary,
+  fontSize: 13,
+  fontWeight: 800,
+  '&.stage-label': { transition: theme.transition },
+});
+
+export const StatusStageHint = styled.span({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  color: theme.colors.text.muted,
+  fontSize: 11,
+});
+
+export const StatusArchive = styled.div({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 14,
+  flexWrap: 'wrap',
+  marginTop: 22,
+  paddingTop: 14,
+  borderTop: `1px solid ${theme.colors.outlineVariant}`,
+  color: theme.colors.text.muted,
+  fontSize: 11,
+  fontWeight: 700,
+  '& > span': { marginRight: 2 },
+});
+
+export const StatusArchiveLink = styled(Link)({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+  color: theme.colors.text.secondary,
+  fontSize: 11,
+  fontWeight: 700,
+  textDecoration: 'none',
+  '&:hover': { color: theme.colors.primary },
+  '& strong': { color: theme.colors.text.primary, fontVariantNumeric: 'tabular-nums' },
+  '.archive-dot': { width: 7, height: 7, borderRadius: '50%' },
+});
+
+export const DashboardError = styled.div({
+  maxWidth: 620,
+  margin: '80px auto',
+  padding: '0 16px',
+});
+
 // ─── Apartments grid (desktop) ──────────────────────────────────────────────
 
 export const ApartmentsGrid = styled.div({

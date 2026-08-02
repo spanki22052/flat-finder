@@ -4,7 +4,7 @@ import { randomDelay } from '../utils/delays.js';
 import { randomUserAgent } from '../utils/user-agents.js';
 import { createStealthContext, launchStealthBrowser } from '../utils/stealth.js';
 import {
-  extractInlineConfig, extractJsonLd, extractNextData, getNumber, getString,
+  extractCianBargainTerms, extractInlineConfig, extractJsonLd, extractNextData, getNumber, getString,
   lightFetch, looksBlocked, normalizeCurrency,
 } from '../utils/light-fetch.js';
 import {
@@ -210,11 +210,15 @@ export class CianParser extends BaseListingParser {
 
     if (!name || price == null) return null;
 
+    const { deposit, agentCommissionPercent } = extractCianBargainTerms(html);
+
     return {
       source: 'LINK',
       sourceUrl,
       title: name,
       price,
+      ...(deposit !== undefined ? { deposit } : {}),
+      ...(agentCommissionPercent !== undefined ? { agentCommissionPercent } : {}),
       currency: normalizeCurrency(currency),
       city,
       ...(district ? { district } : {}),
@@ -247,12 +251,15 @@ export class CianParser extends BaseListingParser {
     const rooms = extractRoomsFromText(title);
     const area = extractAreaFromText(title);
     const phones = extractPhones(meta.description);
+    const { deposit, agentCommissionPercent } = extractCianBargainTerms(html);
 
     return {
       source: 'LINK',
       sourceUrl,
       title,
       price,
+      ...(deposit !== undefined ? { deposit } : {}),
+      ...(agentCommissionPercent !== undefined ? { agentCommissionPercent } : {}),
       currency: 'RUB',
       city,
       ...(meta.streetFromDescription ? { address: meta.streetFromDescription } : {}),
@@ -375,6 +382,9 @@ export class CianParser extends BaseListingParser {
       ?? getString(offer, ['currency'])
       ?? 'RUB';
 
+    const deposit = getNumber(offer, ['bargainTerms', 'deposit']);
+    const agentCommissionPercent = getNumber(offer, ['bargainTerms', 'clientFee']);
+
     const city = getString(offer, ['geo', 'city', 'name'])
       ?? getString(offer, ['address', 'city', 'name'])
       ?? getString(offer, ['city', 'name'])
@@ -413,6 +423,8 @@ export class CianParser extends BaseListingParser {
       sourceUrl,
       title,
       price,
+      ...(deposit !== undefined ? { deposit } : {}),
+      ...(agentCommissionPercent !== undefined ? { agentCommissionPercent } : {}),
       currency: normalizeCurrency(currency),
       city,
       ...(district ? { district } : {}),

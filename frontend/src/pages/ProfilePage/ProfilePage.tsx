@@ -8,7 +8,6 @@ import {
   ArrowLeftOutlined, CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import { authApi, remindersApi, usersApi } from '../../shared/api/endpoints';
 import type { User } from '../../shared/api/types';
 import { flatApi } from '../../entities/Flat/utils/api';
@@ -39,8 +38,6 @@ import {
   TeamEntry, TeamEntryAccent, TeamEntryBody, TeamEntryEyebrow,
   TeamEntryTitle, TeamEntryCaption, TeamEntryArrow,
 } from './styled';
-
-dayjs.locale('ru');
 
 function initials(name: string) {
   return name

@@ -8,7 +8,6 @@ import {
   CrownOutlined, IdcardOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import 'dayjs/locale/ru';
 import { useTeamData, TeamDataProvider } from './useTeamData';
 import type { RoomMember } from '../../entities/Room/model/types';
 import {
@@ -36,8 +35,6 @@ import {
   MobileCalloutLabel, MobileCalloutCode, MobileCalloutCopy, MobileEmpty,
   MobileOwnerHint,
 } from './styled';
-
-dayjs.locale('ru');
 
 function initialsOf(name: string) {
   return name

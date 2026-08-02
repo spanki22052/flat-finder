@@ -86,7 +86,7 @@ window.__SSR_CONTEXT__ = {};</script>`;
         renovation: 'Евро',
       },
       house: { info: { floors: 24, buildYear: 2016 } },
-      priceInfo: { price: 35000, currency: 'RUB', commission: 70 },
+      priceInfo: { price: 35000, currency: 'RUB', commission: 70, deposit: 35000 },
       photos: [
         { url: '/vitrina/ad/73/photo1.jpg', isPlan: false },
         { url: 'https://img.dmclk.ru/vitrina/already-absolute.jpg', isPlan: false },
@@ -105,6 +105,8 @@ window.__SSR_CONTEXT__ = {};</script>`;
       sourceUrl: URL_DOMCLICK,
       title: '1-к квартира, 46 м², 3/24 эт.',
       price: 35000,
+      deposit: 35000,
+      agentCommissionPercent: 70,
       currency: 'RUB',
       city: 'Тюмень',
       district: 'Калининский',
@@ -200,7 +202,7 @@ window.__SSR_CONTEXT__ = {};</script>`;
       </body></html>`;
 
     const $ = load(html);
-    const mapped = parser.extractFromDom($, URL_DOMCLICK);
+    const mapped = parser.extractFromDom($, URL_DOMCLICK, html);
 
     expect(mapped.title).toBe('2-к квартира в центре');
     expect(mapped.price).toBe(120000);
@@ -212,6 +214,6 @@ window.__SSR_CONTEXT__ = {};</script>`;
   it('throws ParserInvalidPageError on missing data', () => {
     const html = `<html><body><div>непонятная страница</div></body></html>`;
     const $ = load(html);
-    expect(() => parser.extractFromDom($, URL_DOMCLICK)).toThrow(ParserInvalidPageError);
+    expect(() => parser.extractFromDom($, URL_DOMCLICK, html)).toThrow(ParserInvalidPageError);
   });
 });

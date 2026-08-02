@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { CianParser } from '../strategies/cian.strategy.js';
 import {
-  extractJsonLd, extractInlineConfig,
+  extractCianBargainTerms, extractJsonLd, extractInlineConfig,
 } from '../utils/light-fetch.js';
 import { htmlTitle, matchMeta } from '../utils/meta-parse.js';
 
@@ -46,6 +46,11 @@ describe('CianParser with real CIAN page', () => {
     expect(images && images.length).toBeGreaterThan(0);
   });
 
+  it('extracts deposit and agentCommissionPercent from bargainTerms', () => {
+    const html = loadFixture();
+    expect(extractCianBargainTerms(html)).toEqual({ deposit: 15000, agentCommissionPercent: 70 });
+  });
+
   it('does not detect blocking markers in real CIAN page', async () => {
     const html = loadFixture();
     // Простой smoke — нет антибот-маркеров
@@ -60,7 +65,8 @@ describe('CianParser with real CIAN page', () => {
     // Вызываем приватный через рефлексию для теста
     const mapped = (parser as unknown as {
       mapJsonLd: (d: Record<string, unknown>, h: string, u: string) => {
-        title: string; price: number; currency: string; city: string; address?: string;
+        title: string; price: number; deposit?: number; agentCommissionPercent?: number;
+        currency: string; city: string; address?: string;
         rooms?: number; area?: number; floor?: number; totalFloors?: number; photos?: string[];
       } | null;
     }).mapJsonLd(ld!, html, 'https://tyumen.cian.ru/rent/flat/331090051/');
@@ -68,6 +74,8 @@ describe('CianParser with real CIAN page', () => {
     expect(mapped).not.toBeNull();
     expect(mapped!.title).toContain('Сдается 1-комн');
     expect(mapped!.price).toBe(28000);
+    expect(mapped!.deposit).toBe(15000);
+    expect(mapped!.agentCommissionPercent).toBe(70);
     expect(mapped!.currency).toBe('RUB');
     expect(mapped!.city).toBe('Тюмень');
     expect(mapped!.rooms).toBe(1);
@@ -82,7 +90,8 @@ describe('CianParser with real CIAN page', () => {
     const html = loadFixture();
     const mapped = (parser as unknown as {
       mapFromMetaTags: (h: string, u: string) => {
-        title: string; price: number; currency: string; city: string; rooms?: number;
+        title: string; price: number; deposit?: number; agentCommissionPercent?: number;
+        currency: string; city: string; rooms?: number;
         area?: number; floor?: number; totalFloors?: number;
       } | null;
     }).mapFromMetaTags(html, 'https://tyumen.cian.ru/rent/flat/331090051/');
@@ -90,6 +99,8 @@ describe('CianParser with real CIAN page', () => {
     expect(mapped).not.toBeNull();
     expect(mapped!.title).toContain('Сдаётся 1-комнатная');
     expect(mapped!.price).toBe(28000);
+    expect(mapped!.deposit).toBe(15000);
+    expect(mapped!.agentCommissionPercent).toBe(70);
     expect(mapped!.city).toBe('Тюмень');
     expect(mapped!.area).toBe(58);
     expect(mapped!.floor).toBe(14);

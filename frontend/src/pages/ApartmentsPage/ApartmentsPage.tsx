@@ -19,19 +19,20 @@ import {
   PARSE_LINK_HINT,
   PARSE_LINK_PLACEHOLDER,
 } from '../../entities/Flat/utils/parseLink';
+import { getEffectiveMoveInCost } from '../../entities/Flat/utils/price';
 import type {
   Apartment, ApartmentStatus, CreateApartmentPayload, HtmlParseSource, ParsedApartment,
 } from '../../entities/Flat/model/types';
 import {
   PageHeader, PageHeaderTitleGroup, PageTitle, PageSubtitle, FiltersRow, SearchInput,
   ResultsBadge, GlassCard,
-  ApartmentRow, AptThumb, AptInfo, AptTitle, AptMeta, PriceTag, TagPills, RowActions,
+  ApartmentRow, AptThumb, AptInfo, AptTitle, AptMeta, PriceTag, PriceTagMeta, TagPills, RowActions,
   DrawerStyled, FormSection, SectionTitle, EmptyState, EmptyIconWrap,
   ModeSwitchWrapper, LinkModeHint, ImportButton, AddApartmentButton,
   PhotoGrid, PhotoTile, PhotoRemoveBtn, PhotoAddRow, PhotoCounter,
   TitleButton, SourceLinkButton, DesktopList, MobileList, MobileApartmentCard,
   MobileApartmentImage, MobileCardBody, MobileCardHeader, MobileApartmentTitle,
-  MobilePrice, MobileMeta, MobileTagRow, MobileCardActions, MobileEmptyState,
+  MobilePrice, MobilePriceMeta, MobileMeta, MobileTagRow, MobileCardActions, MobileEmptyState,
   HeaderActions,
   MobileShell, MobileTopBar, MobileBrand, MobileBrandLogo, MobileBrandCaption,
   MobileTopActions, MobileBellBtn, MobileAvatar, MobileBody, MobileToolbar,
@@ -282,6 +283,8 @@ const [form] = Form.useForm<ApartmentFormValues>();
       source: parsed.source,
       sourceUrl: parsed.sourceUrl,
       price: parsed.price,
+      deposit: parsed.deposit,
+      agentCommissionPercent: parsed.agentCommissionPercent,
       currency: parsed.currency,
       city: parsed.city,
       district: parsed.district,
@@ -450,7 +453,17 @@ const [form] = Form.useForm<ApartmentFormValues>();
     },
     {
       title: 'Цена', dataIndex: 'price', key: 'price', width: 120,
-      render: (price, apt) => <PriceTag>{price.toLocaleString('ru-RU')} {apt.currency}</PriceTag>,
+      render: (price, apt) => {
+        const effectiveCost = getEffectiveMoveInCost(apt);
+        return (
+          <div>
+            <PriceTag>{price.toLocaleString('ru-RU')} {apt.currency}</PriceTag>
+            {effectiveCost !== undefined && (
+              <PriceTagMeta>с учётом всего: {effectiveCost.toLocaleString('ru-RU')} {apt.currency}</PriceTagMeta>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Статус', dataIndex: 'status', key: 'status', width: 130,
@@ -647,7 +660,14 @@ const [form] = Form.useForm<ApartmentFormValues>();
                       <MobileApartmentTitle type="button" onClick={() => navigate(`/apartments/${apt.id}`)}>
                         {apt.title}
                       </MobileApartmentTitle>
-                      <MobilePrice>{apt.price.toLocaleString('ru-RU')} {apt.currency}</MobilePrice>
+                      <div>
+                        <MobilePrice>{apt.price.toLocaleString('ru-RU')} {apt.currency}</MobilePrice>
+                        {getEffectiveMoveInCost(apt) !== undefined && (
+                          <MobilePriceMeta>
+                            с учётом всего: {getEffectiveMoveInCost(apt)!.toLocaleString('ru-RU')} {apt.currency}
+                          </MobilePriceMeta>
+                        )}
+                      </div>
                     </MobileCardHeader>
                     <MobileMeta>
                       <span><EnvironmentOutlined /> {apt.city}{apt.district ? `, ${apt.district}` : ''}</span>
@@ -791,6 +811,18 @@ const [form] = Form.useForm<ApartmentFormValues>();
                 <Col span={8}>
                   <Form.Item name="rooms" label="Комнат">
                     <Input type="number" placeholder="2" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="deposit" label="Залог">
+                    <Input type="number" placeholder="85000" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="agentCommissionPercent" label="Комиссия риелтору, %">
+                    <Input type="number" placeholder="50" />
                   </Form.Item>
                 </Col>
               </Row>

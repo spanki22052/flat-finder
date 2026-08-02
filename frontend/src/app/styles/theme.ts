@@ -95,8 +95,20 @@ export const theme = {
     glowSecondary: '0 0 20px rgba(155, 106, 43, 0.35)',
   },
   fonts: {
-    sans: "'Montserrat', system-ui, -apple-system, sans-serif",
+    display: "'Fraunces', 'Georgia', serif",
+    sans: "'Inter', system-ui, -apple-system, sans-serif",
     mono: "'JetBrains Mono', 'Fira Code', monospace",
+  },
+  // Editorial palette — used by auth pages. Distinct from warm hearth defaults.
+  editorial: {
+    ink: '#0E0B08',
+    paper: '#F4EFE6',
+    paperDeep: '#E8E0D2',
+    stamp: '#C8462C',
+    green: '#1F3D2B',
+    mute: '#8A7E6B',
+    rule: 'rgba(14, 11, 8, 0.18)',
+    paperSoft: 'rgba(244, 239, 230, 0.7)',
   },
   breakpoints: {
     sm: '640px',

@@ -116,6 +116,9 @@ export class DomClickParser extends BaseListingParser {
     const city = typeof address.locality === 'string' ? address.locality : null;
     if (price == null || !city) return null;
 
+    const deposit = typeof priceInfo.deposit === 'number' ? priceInfo.deposit : undefined;
+    const agentCommissionPercent = typeof priceInfo.commission === 'number' ? priceInfo.commission : undefined;
+
     const rooms = typeof objectInfo.rooms === 'number' ? objectInfo.rooms : undefined;
     const area = typeof objectInfo.area === 'number' ? objectInfo.area : undefined;
     const floor = typeof objectInfo.floor === 'number' ? objectInfo.floor : undefined;
@@ -142,6 +145,8 @@ export class DomClickParser extends BaseListingParser {
       sourceUrl,
       title,
       price,
+      ...(deposit !== undefined ? { deposit } : {}),
+      ...(agentCommissionPercent !== undefined ? { agentCommissionPercent } : {}),
       currency,
       city,
       ...(district ? { district } : {}),
