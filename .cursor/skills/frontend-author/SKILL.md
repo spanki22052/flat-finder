@@ -47,12 +47,107 @@ frontend/src/
 │       └── GlobalStyles.ts               # createGlobalStyle
 ├── pages/                               # view-layer screens
 │   ├── LoginPage/{LoginPage.tsx, styled.ts}
-│   ├── RegisterPage/{RegisterPage.tsx, styled.ts}
-│   ├── DashboardPage/{DashboardPage.tsx, styled.ts}
-│   ├── ApartmentsPage/{ApartmentsPage.tsx, styled.ts}
-│   ├── ApartmentDetailPage/{ApartmentDetailPage.tsx, styled.ts}
-│   ├── RemindersPage/{RemindersPage.tsx, styled.ts}
-│   └── ProfilePage/{ProfilePage.tsx, styled.ts}
+│   ├── LoginPage/
+│   │   ├── ui/
+│   │   │   └── LoginPage.tsx
+│   │   ├── hooks/
+│   │   │   └── useLoginPage.ts        # draft, submit, redirect
+│   │   └── model/
+│   │       └── types.ts                # LoginValues, EMPTY_LOGIN, LoginPageState
+│   ├── RegisterPage/
+│   │   ├── ui/
+│   │   │   └── RegisterPage.tsx
+│   │   ├── hooks/
+│   │   │   └── useRegisterPage.ts      # draft, submit, redirect
+│   │   ├── model/
+│   │   │   └── types.ts                # RegisterValues, EMPTY_REGISTER, RegisterPageState
+│   │   └── lib/
+│   │       └── utils.ts                # themeFontsMono
+│   ├── RoomsPage/
+│   │   ├── ui/
+│   │   │   ├── RoomsPage.tsx           # presentation only
+│   │   │   └── RoomsPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useRoomsPage.ts         # create/join, stats, pick
+│   │   └── model/
+│   │       └── types.ts                # RoomsMode, CreateRoomValues, JoinRoomValues
+│   ├── RoomManagePage/
+│   │   ├── ui/
+│   │   │   ├── RoomManagePage.tsx      # presentation only
+│   │   │   └── RoomManagePage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useRoomManagePage.ts    # rename, regenerate, copy, kick, leave
+│   │   ├── model/
+│   │   │   └── types.ts                # RoomManageMemberItem
+│   │   └── lib/
+│   │       └── utils.ts                # initials
+│   ├── DashboardPage/
+│   │   ├── ui/
+│   │   │   ├── DashboardPage.tsx
+│   │   │   └── DashboardPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useDashboard.ts         # parallel fetch + status counts
+│   │   ├── model/
+│   │   │   └── types.ts                # STATUS_LABELS, STATUS_TONES, StatusCounts, FLOW_STATUSES
+│   │   └── lib/
+│   │       └── utils.ts                # initials, firstName, greetingForHour, formatPrice, formatDueAt
+│   ├── ApartmentsPage/
+│   │   ├── ui/
+│   │   │   ├── ApartmentsPage.tsx      # presentation only
+│   │   │   └── ApartmentsPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useApartmentsPage.ts    # data fetching, mutations, parsing, form
+│   │   ├── model/
+│   │   │   └── types.ts                # STATUS_LABELS, CURRENCIES, STATUS_CHIPS, DrawerMode, ApartmentFormValues, UseApartmentsPageReturn
+│   │   └── lib/
+│   │       └── utils.ts                # initials, pluralApartments, describeParseError
+│   ├── ApartmentDetailPage/
+│   │   ├── ui/
+│   │   │   ├── ApartmentDetailPage.tsx
+│   │   │   └── ApartmentDetailPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useApartmentDetail.ts   # data fetching, meeting save/cancel
+│   │   ├── model/
+│   │   │   └── types.ts                # STATUS_LABELS, COLLAPSE_LINES, PHOTO_LIMIT
+│   │   └── lib/
+│   │       └── utils.ts                # formatPhone
+│   ├── ImportPage/
+│   │   ├── ui/
+│   │   │   ├── ImportPage.tsx
+│   │   │   └── ImportPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useImportPage.ts        # decode + parse-html + redirect
+│   │   └── model/
+│   │       └── types.ts                # SOURCE_LABELS, ImportStatus
+│   ├── RemindersPage/
+│   │   ├── ui/
+│   │   │   ├── RemindersPage.tsx       # presentation only
+│   │   │   └── RemindersPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useRemindersPage.ts     # data fetching, mutations, derived groupings
+│   │   ├── model/
+│   │   │   └── types.ts                # DateBucket, DateFilter, GroupedReminders, ViewProps
+│   │   └── lib/
+│   │       └── utils.ts                # initials, pluralize, getBucket, buildWeek, formatters
+│   ├── ProfilePage/
+│   │   ├── ui/
+│   │   │   ├── ProfilePage.tsx       # presentation only (SelfView, TeammateView)
+│   │   │   └── ProfilePage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useProfilePage.ts    # data fetching, loading, reloadSelf
+│   │   ├── model/
+│   │   │   └── types.ts             # MemberStats, SelfProfileState, TeammateProfileState, SelfViewProps, TeammateViewProps
+│   │   └── lib/
+│   │       └── utils.ts             # initials, avatarTone, daysSince, themeMono, copyText
+│   └── TeamPage/
+│       ├── ui/
+│       │   ├── TeamPage.tsx          # DesktopTeamView, MobileTeamView, EditProfileModal, MemberActions
+│       │   └── TeamPage.styled.ts
+│       ├── useTeamData.tsx           # data provider hook
+│       ├── model/
+│       │   └── types.ts                # EditFormValues, AVATAR_TONES, MemberActionsProps
+│       └── lib/
+│           └── utils.ts                # initialsOf, avatarTone, pluralPeople
 ├── widgets/
 │   └── Layout/
 │       ├── Layout.tsx                    # shell: top-bar + sidebar/outlet + Fab + BottomNav
@@ -87,20 +182,27 @@ frontend/src/
 - Typed API objects are split: cross-cutting (auth, contacts, reminders) in `shared/api/endpoints.ts`; entity-specific (Flat) in `entities/Flat/utils/api.ts`.
 - All DTOs/response shapes are in `shared/api/types.ts` (cross-cutting) and `entities/<X>/model/types.ts` (entity-specific).
 - Entity name is `Flat` in the frontend, but the backend uses `/apartments`. DTO type is `Apartment` despite the folder being `Flat`. Keep the asymmetry — do not rename.
-- Pages are folders: `pages/<PageName>/<PageName>.tsx` + `styled.ts` colocated in the same folder (NOT a `ui/` subfolder).
+- **`lib/`** holds page-specific pure utilities (no React dependencies) **and standalone helper functions used by components** (e.g. `copyText`, `formatDate`). Global shared utils go in `shared/`.
+- **`model/`** holds types, interfaces, enums, and component prop interfaces. Cross-cutting types go in `shared/api/types.ts`.
+- Pages that grow beyond simple state use the **FSD pattern**: `ui/Page.tsx` (presentation), `hooks/usePage.ts` (logic), `model/types.ts` (types), `lib/utils.ts` (pure utils). See `ProfilePage/` as reference.
 
 ### Component pattern (FSD)
 
+For self-contained page-level components (like ProfilePage), the structure is:
 ```
-components/<Name>/
+pages/<Name>/
 ├── ui/
-│   ├── <Name>.tsx          # presentation
+│   ├── <Name>.tsx           # presentation only (interfaces in model/)
 │   └── <Name>.styled.ts    # styled components
-├── model/types.ts
-└── hooks/use<Name>.ts      # local state + effects
+├── hooks/
+│   └── use<Name>.ts        # data fetching + state
+├── model/
+│   └── types.ts            # types, interfaces, enums, component prop interfaces
+└── lib/
+    └── utils.ts            # pure page-specific helpers + standalone functions (copyText, formatters)
 ```
 
-This pattern is the template for new self-contained widgets. For small sub-components (no local state, no DTOs) colocate `<Name>.tsx` + `<Name>.styled.ts` inside the parent folder (see `LayoutSidebar`, `BottomNav`, `AuroraBackground`).
+Small sub-components colocate `<Name>.tsx` + `<Name>.styled.ts` inside the parent folder (see `LayoutSidebar`, `BottomNav`, `AuroraBackground`).
 
 ## 4. Required shared infra (already in place — extend, don't reinvent)
 

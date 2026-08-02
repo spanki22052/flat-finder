@@ -268,16 +268,106 @@ src/
 │       └── GlobalStyles.ts    # createGlobalStyle — resets, body bg, scrollbar
 ├── pages/
 │   ├── LoginPage/             # public
+│   │   ├── ui/
+│   │   │   ├── LoginPage.tsx
+│   │   ├── hooks/
+│   │   │   └── useLoginPage.ts        # draft, submit, redirect
+│   │   └── model/
+│   │       └── types.ts                # LoginValues, EMPTY_LOGIN, LoginPageState
 │   ├── RegisterPage/          # public
+│   │   ├── ui/
+│   │   │   ├── RegisterPage.tsx
+│   │   ├── hooks/
+│   │   │   └── useRegisterPage.ts      # draft, submit, redirect
+│   │   ├── model/
+│   │   │   └── types.ts                # RegisterValues, EMPTY_REGISTER, RegisterPageState
+│   │   └── lib/
+│   │       └── utils.ts                # themeFontsMono
 │   ├── RoomsPage/             # room selection / join (post-login)
+│   │   ├── ui/
+│   │   │   ├── RoomsPage.tsx
+│   │   │   └── RoomsPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useRoomsPage.ts         # create/join, stats, pick
+│   │   └── model/
+│   │       └── types.ts                # RoomsMode, CreateRoomValues, JoinRoomValues, RoomsPageStats
 │   ├── RoomManagePage/        # owner settings, invite-code regenerate, member list
+│   │   ├── ui/
+│   │   │   ├── RoomManagePage.tsx
+│   │   │   └── RoomManagePage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useRoomManagePage.ts    # rename, regenerate, copy, kick, leave
+│   │   ├── model/
+│   │   │   └── types.ts                # RoomManageMemberItem
+│   │   └── lib/
+│   │       └── utils.ts                # initials
 │   ├── DashboardPage/         # stats, recent apartments, upcoming reminders
+│   │   ├── ui/
+│   │   │   ├── DashboardPage.tsx
+│   │   │   └── DashboardPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useDashboard.ts         # parallel fetch + status counts
+│   │   ├── model/
+│   │   │   └── types.ts                # STATUS_LABELS, STATUS_TONES, StatusCounts, FLOW_STATUSES
+│   │   └── lib/
+│   │       └── utils.ts                # initials, firstName, greetingForHour, formatPrice, formatDueAt
 │   ├── ApartmentsPage/        # list + filter + Drawer form; mobile shell with cards + filters
+│   │   ├── ui/
+│   │   │   ├── ApartmentsPage.tsx      # presentation only
+│   │   │   └── ApartmentsPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useApartmentsPage.ts    # data fetching, mutations, parsing (link + html), form
+│   │   ├── model/
+│   │   │   └── types.ts                # STATUS_LABELS, CURRENCIES, STATUS_CHIPS, DrawerMode, ApartmentFormValues, UseApartmentsPageReturn
+│   │   └── lib/
+│   │       └── utils.ts                # initials, pluralApartments, describeParseError
 │   ├── ApartmentDetailPage/   # hero card with price+deposit+commission; gallery; info; meeting modal
+│   │   ├── ui/
+│   │   │   ├── ApartmentDetailPage.tsx
+│   │   │   └── ApartmentDetailPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useApartmentDetail.ts   # data fetching, meeting save/cancel
+│   │   ├── model/
+│   │   │   └── types.ts                # STATUS_LABELS, COLLAPSE_LINES, PHOTO_LIMIT
+│   │   └── lib/
+│   │       └── utils.ts                # formatPhone
 │   ├── ImportPage/            # decodes the extension's `#data=<base64>` hash, calls parse-html
+│   │   ├── ui/
+│   │   │   ├── ImportPage.tsx
+│   │   │   └── ImportPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useImportPage.ts        # decode + parse-html + redirect
+│   │   └── model/
+│   │       └── types.ts                # SOURCE_LABELS, ImportStatus
 │   ├── RemindersPage/         # full reminders CRUD; pending/completed split; mobile shell
+│   │   ├── ui/
+│   │   │   ├── RemindersPage.tsx       # presentation only (DesktopView, MobileView, ApartmentPicker, ReminderCardRow, MobileReminderRow)
+│   │   │   └── RemindersPage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useRemindersPage.ts     # data fetching, mutations, derived groupings
+│   │   ├── model/
+│   │   │   └── types.ts                # DateBucket, DateFilter, GroupedReminders, STATUS_LABELS, FILTER_OPTIONS, ViewProps, ReminderCardRowProps, MobileReminderRowProps, ApartmentPickerProps
+│   │   └── lib/
+│   │       └── utils.ts                # initials, pluralize, getBucket, buildWeek, formatTimeShort, formatRelativeDay, formatFullDate, isCurrentWeek, matchesFilter, distanceFor
 │   ├── ProfilePage/           # own profile + teammate card variant at /users/:id
+│   │   ├── ui/
+│   │   │   ├── ProfilePage.tsx      # presentation only (SelfView, TeammateView)
+│   │   │   └── ProfilePage.styled.ts
+│   │   ├── hooks/
+│   │   │   └── useProfilePage.ts   # data fetching, loading, reloadSelf
+│   │   ├── model/
+│   │   │   └── types.ts            # MemberStats, SelfProfileState, TeammateProfileState, SelfViewProps, TeammateViewProps
+│   │   └── lib/
+│   │       └── utils.ts            # initials, avatarTone, daysSince, themeMono, copyText
 │   └── TeamPage/              # useTeamData hook + member UI (desktop + mobile variants)
+│       ├── ui/
+│       │   ├── TeamPage.tsx       # DesktopTeamView, MobileTeamView, EditProfileModal, MemberActions
+│       │   └── TeamPage.styled.ts
+│       ├── useTeamData.tsx        # data provider hook
+│       ├── model/
+│       │   └── types.ts                # EditFormValues, AVATAR_TONES, MemberActionsProps, EditProfileModalProps
+│       └── lib/
+│           └── utils.ts                # initialsOf, avatarTone, pluralPeople
 ├── widgets/
 │   └── Layout/
 │       ├── Layout.tsx               # desktop TopBar (search + room switcher + bell + settings) | mobile room bar + bottom nav

@@ -3,17 +3,17 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../providers/ProtectedRoute';
 import { RequireRoom } from '../providers/RequireRoom';
 import { Layout } from '../../widgets/Layout/Layout';
-import { LoginPage } from '../../pages/LoginPage/LoginPage';
-import { RegisterPage } from '../../pages/RegisterPage/RegisterPage';
-import { RoomsPage } from '../../pages/RoomsPage/RoomsPage';
-import { RoomManagePage } from '../../pages/RoomManagePage/RoomManagePage';
-import { DashboardPage } from '../../pages/DashboardPage/DashboardPage';
-import { ApartmentsPage } from '../../pages/ApartmentsPage/ApartmentsPage';
-import { ApartmentDetailPage } from '../../pages/ApartmentDetailPage/ApartmentDetailPage';
-import { ImportPage } from '../../pages/ImportPage/ImportPage';
-import { RemindersPage } from '../../pages/RemindersPage/RemindersPage';
-import { ProfilePage } from '../../pages/ProfilePage/ProfilePage';
-import { TeamPage } from '../../pages/TeamPage/TeamPage';
+import { LoginPage } from '../../pages/LoginPage/ui/LoginPage';
+import { RegisterPage } from '../../pages/RegisterPage/ui/RegisterPage';
+import { RoomsPage } from '../../pages/RoomsPage/ui/RoomsPage';
+import { RoomManagePage } from '../../pages/RoomManagePage/ui/RoomManagePage';
+import { DashboardPage } from '../../pages/DashboardPage/ui/DashboardPage';
+import { ApartmentsPage } from '../../pages/ApartmentsPage/ui/ApartmentsPage';
+import { ApartmentDetailPage } from '../../pages/ApartmentDetailPage/ui/ApartmentDetailPage';
+import { ImportPage } from '../../pages/ImportPage/ui/ImportPage';
+import { RemindersPage } from '../../pages/RemindersPage/ui/RemindersPage';
+import { ProfilePage } from '../../pages/ProfilePage/ui/ProfilePage';
+import { TeamPage } from '../../pages/TeamPage/ui/TeamPage';
 
 export function AppRouter() {
   return (
