@@ -4,6 +4,7 @@
 
 - Base URL: `/api/v1`.
 - Auth header: `Authorization: Bearer <jwt>`.
+- Room header: `X-Room-Id: <roomId>` — required on all room-scoped endpoints (see [Rooms](#rooms)).
 - Success envelope: `{ "data": T, "meta"?: { ... } }`.
 - Error envelope: `{ "error": { "code": string, "message": string, "details"?: unknown } }`.
 - All timestamps are ISO-8601 strings (UTC).
@@ -31,11 +32,69 @@ User entity:
 
 ## Users
 
-- `GET /users` — list (admin/team scope).
-- `GET /users/:id`.
-- `PATCH /users/:id` — body partial.
+- `GET /users/:id` — возвращает `User` (`id`, `username`, `email?`, `name`, `role`, `createdAt`, `updatedAt`).
+- `PATCH /users/:id` — body partial (only own profile fields: `name`, `email`; `role` осталась в DTO для админских нужд, но обычные пользователи не могут её менять сами — проверка на уровне сервиса не входит в объём этой задачи).
+
+Глобального списка пользователей больше нет — участники видны только в контексте комнаты, см. `GET /rooms/:id/members`.
+
+## Rooms
+
+Комната (Room) — это общее пространство для квартир/контактов/напоминаний/тегов. Пользователь может быть участником нескольких комнат и переключаться между ними на фронте; сервер не хранит "текущую" комнату в токене — клиент передаёт её явно в каждом запросе.
+
+Room entity:
+
+```
+{
+  id: string
+  name: string
+  inviteCode: string       // 8 символов, для присоединения других пользователей
+  role: "OWNER" | "MEMBER" // роль текущего пользователя в этой комнате
+  membersCount: number
+  createdAt: string
+}
+```
+
+RoomMember entity (в `GET /rooms/:id/members`):
+
+```
+{
+  id: string          // userId
+  name: string
+  email?: string
+  role: "OWNER" | "MEMBER"
+  joinedAt: string
+}
+```
+
+Endpoints (guard: только JWT, без `X-Room-Id` — это управление списком комнат самого пользователя):
+
+- `POST /rooms` — body `{ name: string }`. Создаёт комнату, текущий пользователь становится `OWNER`, генерируется уникальный `inviteCode`. Возвращает `{ data: Room }`.
+- `POST /rooms/join` — body `{ inviteCode: string }`. Добавляет текущего пользователя как `MEMBER`. Если код не найден — `NOT_FOUND` (`ROOM_NOT_FOUND`). Если пользователь уже состоит в этой комнате — `CONFLICT` (`ROOM_ALREADY_MEMBER`). Возвращает `{ data: Room }`.
+- `GET /rooms` — список комнат текущего пользователя (для экрана выбора комнаты после логина). Возвращает `{ data: Room[] }`.
+- `GET /rooms/:id` — детали комнаты, включая `inviteCode`, видна только участникам, иначе `FORBIDDEN` (`ROOM_ACCESS_DENIED`).
+- `PATCH /rooms/:id` — body `{ name: string }`. Переименовать комнату, только `OWNER`, иначе `FORBIDDEN`. Возвращает `{ data: Room }`.
+- `POST /rooms/:id/invite-code/regenerate` — перегенерировать `inviteCode`. Только `OWNER`, иначе `FORBIDDEN`. Возвращает `{ data: Room }`.
+- `DELETE /rooms/:id/leave` — выйти из комнаты. `OWNER` не может выйти (`CONFLICT`, код `ROOM_OWNER_CANNOT_LEAVE`) — передача владения и удаление комнаты не входят в эту итерацию.
+- `GET /rooms/:id/members` — список участников комнаты, только для участников.
+- `DELETE /rooms/:id/members/:userId` — удалить участника из комнаты. Только `OWNER`, иначе `FORBIDDEN`. `OWNER` не может выгнать сам себя (`CONFLICT`, код `ROOM_OWNER_CANNOT_LEAVE`). Несуществующий участник → `NOT_FOUND`.
+
+Все остальные ресурсы (`apartments`, `contacts`, `reminders`, tags, парсер) требуют заголовок `X-Room-Id` с id одной из комнат пользователя:
+
+- Заголовок отсутствует → `400` (`ROOM_REQUIRED`).
+- Пользователь не состоит в указанной комнате → `403` (`ROOM_ACCESS_DENIED`).
+- Комната не найдена → `403` (`ROOM_ACCESS_DENIED`) (не раскрываем существование чужих комнат через `404`).
+
+UI flow:
+
+1. После логина/регистрации фронт вызывает `GET /rooms`.
+2. Если комнат 0 — экран "Создать комнату" / "Присоединиться по коду".
+3. Если комнат 1+ — экран выбора комнаты (можно сразу создать/присоединиться к ещё одной). Пользователь выбирает комнату → фронт запоминает `roomId`, дальше передаёт его в `X-Room-Id` для всех запросов к apartments/contacts/reminders.
+4. После выбора комнаты — обычный дашборд и остальные страницы.
+5. Свитчер комнаты (например, в профиле/сайдбаре) сбрасывает `roomId` и возвращает на экран выбора комнаты.
 
 ## Apartments
+
+Все endpoints требуют заголовок `X-Room-Id` (см. [Rooms](#rooms)); данные видны и создаются только в рамках указанной комнаты.
 
 Entity:
 
@@ -79,10 +138,12 @@ Endpoints:
 
 ## Tags & Statuses
 
-- Tags are free-form strings; managed per apartment.
+- Tags are free-form strings, unique per room; managed per apartment. Требует `X-Room-Id`.
 - Statuses are enum-constrained (see entity above).
 
 ## Contacts
+
+Все endpoints требуют заголовок `X-Room-Id`; контакты общие для всех участников комнаты.
 
 ```
 {
@@ -93,6 +154,8 @@ Endpoints:
 - `GET /contacts`, `GET /contacts/:id`, `POST /contacts`, `PATCH /contacts/:id`, `DELETE /contacts/:id`.
 
 ## Reminders
+
+Все endpoints требуют заголовок `X-Room-Id`; напоминания общие для всех участников комнаты (но `assigneeId` указывает конкретного ответственного).
 
 ```
 {
@@ -108,14 +171,18 @@ Endpoints:
 
 - `VALIDATION_ERROR` — 400, `details` is array of field errors.
 - `UNAUTHORIZED` — 401.
+- `ROOM_REQUIRED` — 400, заголовок `X-Room-Id` не передан.
 - `FORBIDDEN` — 403.
+- `ROOM_ACCESS_DENIED` — 403, пользователь не состоит в указанной комнате.
 - `NOT_FOUND` — 404.
 - `CONFLICT` — 409 (e.g. email already in use).
+- `ROOM_ALREADY_MEMBER` — 409, пользователь уже состоит в комнате.
+- `ROOM_OWNER_CANNOT_LEAVE` — 409, владелец не может выйти из своей комнаты.
 - `INTERNAL` — 500.
 
 ## Parse Link
 
-Endpoint: `POST /api/v1/apartments/parse-link`.
+Endpoint: `POST /api/v1/apartments/parse-link`. Требует заголовок `X-Room-Id` (парсер не создаёт запись, но живёт в модуле apartments, который room-scoped).
 
 Запрос:
 
@@ -184,9 +251,20 @@ POST /apartments/parse-html
 }
 ```
 
-`source` обязателен: `avito` или `domclick`. `sourceUrl` необязателен: без него в результате будет URL главной страницы выбранного источника. Сервер не выполняет сетевой запрос к площадке, а разбирает переданный HTML и возвращает тот же объект, что `parse-link`.
+`source` обязателен: `avito`, `domclick`, `cian` или `yandex`. `sourceUrl` необязателен: без него в результате будет URL главной страницы выбранного источника. Сервер не выполняет сетевой запрос к площадке, а разбирает переданный HTML и возвращает тот же объект, что `parse-link`.
 
 Ошибки: `PARSER_INVALID_PAGE` (`422`), `PARSER_BLOCKED` (`502`), `PARSER_FAILED` (`502`).
+
+### Источник: расширение браузера
+
+Помимо ручного экспорта HTML-файла, `parse-html` используется расширением Chrome «Flat Finder Importer» (см. `extension/`). Расширение:
+
+1. На странице объявления (cian.ru, avito.ru, realty.yandex.ru/yandex.ru, domclick.ru/.com) показывает плавающую кнопку «+».
+2. По клику собирает `outerHTML` документа и текущий `location.href`.
+3. Кодирует `{ source, html, sourceUrl }` в `base64` и открывает `{FRONTEND_URL}/import#data=<base64>` в новой вкладке (адрес фронтенда задаётся в настройках расширения).
+4. Фронтенд (`/import`) декодирует хэш на клиенте, вызывает `POST /apartments/parse-html` с уже открытой пользовательской сессией (JWT + `X-Room-Id`), показывает превью формы — пользователь проверяет и сохраняет как обычно.
+
+Хэш никогда не попадает на сервер как отдельный токен — обмен идёт через тело `parse-html`, backend не хранит никаких временных записей для этого потока.
 
 ## Versioning
 

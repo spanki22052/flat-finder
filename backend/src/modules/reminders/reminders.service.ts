@@ -14,8 +14,9 @@ const REMINDER_SELECT = {
 export class RemindersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(dto: ListReminderDto) {
+  async list(dto: ListReminderDto, roomId: string) {
     const where: Prisma.ReminderWhereInput = {
+      roomId,
       ...(dto.status && { status: dto.status }),
       ...(dto.assigneeId && { assigneeId: dto.assigneeId }),
       ...(dto.from || dto.to ? {
@@ -38,10 +39,11 @@ export class RemindersService {
     return { data, meta: { total } };
   }
 
-  async create(dto: CreateReminderDto, userId: string) {
+  async create(dto: CreateReminderDto, userId: string, roomId: string) {
     return this.prisma.reminder.create({
       data: {
         ...dto,
+        roomId,
         dueAt: new Date(dto.dueAt),
         assigneeId: dto.assigneeId ?? userId,
       },
@@ -49,8 +51,8 @@ export class RemindersService {
     });
   }
 
-  async update(id: string, dto: UpdateReminderDto) {
-    const reminder = await this.prisma.reminder.findUnique({ where: { id } });
+  async update(id: string, dto: UpdateReminderDto, roomId: string) {
+    const reminder = await this.prisma.reminder.findFirst({ where: { id, roomId } });
     if (!reminder) throw new NotFoundException('Reminder not found');
     return this.prisma.reminder.update({
       where: { id },
@@ -59,8 +61,8 @@ export class RemindersService {
     });
   }
 
-  async remove(id: string) {
-    const reminder = await this.prisma.reminder.findUnique({ where: { id } });
+  async remove(id: string, roomId: string) {
+    const reminder = await this.prisma.reminder.findFirst({ where: { id, roomId } });
     if (!reminder) throw new NotFoundException('Reminder not found');
     await this.prisma.reminder.delete({ where: { id } });
     return { deleted: true };

@@ -1,51 +1,43 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Modal, Form, Skeleton, Tooltip, message, Empty, App,
-} from 'antd';
+import { Form, Skeleton, Tooltip, Empty, App } from 'antd';
 import {
   EditOutlined, DeleteOutlined, MailOutlined,
-  SearchOutlined, CopyOutlined, ClockCircleOutlined, TeamOutlined,
+  SearchOutlined, CopyOutlined, ClockCircleOutlined,
   SettingOutlined, UserAddOutlined, HomeOutlined, FilterOutlined,
-  CrownOutlined, IdcardOutlined,
+  CrownOutlined, IdcardOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
-import { useAuth } from '../../app/providers/AuthProvider';
-import { useRoom } from '../../app/providers/RoomProvider';
-import {
-  useGetRoomMembers,
-  useRemoveRoomMember,
-  useLeaveRoom,
-  useRegenerateInviteCode,
-} from '../../entities/Room/hooks/useRooms';
+import { useTeamData, TeamDataProvider } from './useTeamData';
 import type { RoomMember } from '../../entities/Room/model/types';
-import { remindersApi } from '../../shared/api/endpoints';
-import { apiClient, getApiError } from '../../shared/api/client';
 import {
-  Page, Shell, HeroCard, HeroPattern, HeroRow, HeroHeading, HeroSubtitle,
-  HeroActions, HeroBtn, StatsRow, StatTile,
-  ControlsRow, SearchInput, ChipsRow, FilterChip, TableCard,
-  MemberGrid, MemberRow, Avatar, Main, NameRow, NameText, RoleTag, SelfBadge,
-  Meta, StatsInline, StatPill, Actions, IconBtn, EmptyState, FormRow, SkeletonRow,
-  InviteCallout, Hint,
+  Page, Shell,
+  HeroCard, HeroRow, HeroLabel, HeroTitle, HeroLead,
+  HeroActions, HeroBtn, HeroMetaRow, MetaPill,
+  RosterCard, RosterToolbar, SearchField, ChipsRow, FilterChip,
+  RosterList, RosterRow, RosterRail, RailName, RailTag,
+  RosterBody, Identity, NameLine, NameText, BadgeRow, RoleBadge, SelfBadge,
+  ContactLine, JoinedLine,
+  Pulse, ActivityCell, ActivityHead, ActivityValue, ActivityLabel,
+  ActionCell, IconAction, IconActionDanger,
+  EmptyState, SkeletonRow,
+  BottomCallout, CalloutLabel, CalloutCode, CalloutAction,
+  OwnerHint,
+  EditModal, EditModalFormShell, EditRow, EditLabel, EditInput,
+  EditModalFooter, EditModalPrimaryBtn,
+  MobileShell, MobileTopBar, MobileBrand, MobileBrandLogo, MobileBrandText,
+  MobileBrandCaption, MobileTopActions, MobileAvatar, MobileBody,
+  MobileHeading, MobileSub, MobileSearch, MobileSearchWrap, MobileChips, MobileChip,
+  MobileRoster, MobileRosterCard, MobileRail, MobileIdentity,
+  MobileName, MobileBadgeRow, MobileRole, MobileSelfBadge, MobileMetaLine,
+  MobileStats, MobileStat, MobileStatValue, MobileStatLabel,
+  MobileActions, MobileActionBtn, MobileActionDanger, MobileCallout,
+  MobileCalloutLabel, MobileCalloutCode, MobileCalloutCopy, MobileEmpty,
+  MobileOwnerHint,
 } from './styled';
 
 dayjs.locale('ru');
-
-type RoleFilter = 'all' | 'owner' | 'member';
-
-interface MemberStats {
-  apartments: number;
-  callbacks: number;
-  viewings: number;
-  done: number;
-}
-
-interface TeamMember extends RoomMember {
-  stats?: MemberStats;
-  loadingStats?: boolean;
-}
 
 function initialsOf(name: string) {
   return name
@@ -57,505 +49,736 @@ function initialsOf(name: string) {
     .toUpperCase() || 'U';
 }
 
-function hueFromId(id: string) {
+function avatarTone(id: string) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h + id.charCodeAt(i) * 17) | 0;
-  return Math.abs(h % 9);
+  return Math.abs(h % 6);
 }
 
-const STATUS_LABELS: Record<keyof MemberStats, string> = {
-  apartments: 'объектов',
-  callbacks: 'перезвон',
-  viewings: 'просмотр',
-  done: 'готовых',
-};
-
-async function fetchMemberStats(userId: string): Promise<MemberStats> {
-  const [allForMember, pendingReminders] = await Promise.all([
-    apiClient
-      .get<{ data: Array<{ status: string }>; meta: { total: number } }>(`/apartments`, {
-        params: { assigneeId: userId, pageSize: 100 },
-      })
-      .then((r) => ({
-        total: r.data.meta?.total ?? 0,
-        items: r.data.data ?? [],
-      })),
-    remindersApi.list({ assigneeId: userId, status: 'PENDING' }).then((r) => r.data.data ?? []),
-  ]);
-  const items = allForMember.items;
-  const callbacks = items.filter((a) => a.status === 'CALLBACK').length;
-  const viewings = items.filter((a) => a.status === 'VIEWING').length;
-  const done = items.filter((a) => a.status === 'DONE').length;
-  void pendingReminders;
-  return { apartments: allForMember.total, callbacks, viewings, done };
-}
+const AVATAR_TONES = [
+  { from: '#b55b3b', to: '#7a2f12' },
+  { from: '#9b6a2b', to: '#5c3a14' },
+  { from: '#4f7a52', to: '#2c4630' },
+  { from: '#3d6b8a', to: '#1f3f55' },
+  { from: '#8a4d3d', to: '#5c2c20' },
+  { from: '#645e4f', to: '#3b3729' },
+];
 
 interface EditFormValues {
   name: string;
   email?: string;
 }
 
-export function TeamPage() {
+function EditProfileModal({
+  open, onCancel, user,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  user?: { name: string; email?: string } | null;
+}) {
+  const { submitEdit } = useTeamData();
+  const [form] = Form.useForm<EditFormValues>();
+
+  useEffect(() => {
+    if (open && user) {
+      form.setFieldsValue({ name: user.name, email: user.email ?? '' });
+    }
+  }, [open, user, form]);
+
+  const onFinish = async (values: EditFormValues) => {
+    try {
+      await submitEdit(values);
+    } catch {
+      // toast already shown
+    }
+  };
+
+  return (
+    <EditModal
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      title="Редактировать профиль"
+      destroyOnClose
+    >
+      <EditModalFormShell>
+        <Form
+          form={form}
+          layout="vertical"
+          preserve={false}
+          onFinish={onFinish}
+        >
+          <EditRow>
+            <EditLabel htmlFor="team-edit-name">Имя</EditLabel>
+            <Form.Item
+              name="name"
+              rules={[{ required: true, message: 'Введите имя' }, { min: 2, message: 'Минимум 2 символа' }]}
+              noStyle
+            >
+              <EditInput id="team-edit-name" placeholder="Ваше имя" autoFocus />
+            </Form.Item>
+          </EditRow>
+          <EditRow>
+            <EditLabel htmlFor="team-edit-email">Email</EditLabel>
+            <Form.Item
+              name="email"
+              rules={[{ type: 'email', message: 'Не похоже на email' }]}
+              noStyle
+            >
+              <EditInput id="team-edit-email" placeholder="email@example.com" />
+            </Form.Item>
+          </EditRow>
+          <EditModalFooter>
+            <HeroBtn type="button" onClick={onCancel}>
+              Отмена
+            </HeroBtn>
+            <EditModalPrimaryBtn type="submit">
+              Сохранить
+            </EditModalPrimaryBtn>
+          </EditModalFooter>
+        </Form>
+      </EditModalFormShell>
+    </EditModal>
+  );
+}
+
+interface ActionsArgs {
+  isOwner: boolean;
+  isSelf: boolean;
+  isMemberOwner: boolean;
+  m: RoomMember;
+  navigate: (path: string) => void;
+  onEdit: () => void;
+  onKick: () => void;
+  onLeave: () => void;
+}
+
+function MemberActions({ isOwner, isSelf, isMemberOwner, m, navigate, onEdit, onKick, onLeave }: ActionsArgs) {
+  return (
+    <ActionCell>
+      {isSelf ? (
+        <Tooltip title="Редактировать свой профиль">
+          <IconAction
+            type="button"
+            $variant="primary"
+            onClick={onEdit}
+            aria-label="Редактировать профиль"
+          >
+            <EditOutlined /> <span>Изменить</span>
+          </IconAction>
+        </Tooltip>
+      ) : (
+        <Tooltip title="Открыть профиль">
+          <IconAction
+            type="button"
+            onClick={() => navigate(`/users/${m.id}`)}
+            aria-label="Открыть профиль"
+          >
+            <IdcardOutlined />
+          </IconAction>
+        </Tooltip>
+      )}
+      {isOwner && !isMemberOwner && !isSelf && (
+        <Tooltip title="Удалить из команды">
+          <IconActionDanger type="button" onClick={onKick} aria-label="Удалить">
+            <DeleteOutlined />
+          </IconActionDanger>
+        </Tooltip>
+      )}
+      {!isOwner && isSelf && !isMemberOwner && (
+        <Tooltip title="Покинуть команду">
+          <IconActionDanger type="button" onClick={onLeave} aria-label="Покинуть">
+            <DeleteOutlined />
+          </IconActionDanger>
+        </Tooltip>
+      )}
+    </ActionCell>
+  );
+}
+
+function DesktopTeamView() {
   const navigate = useNavigate();
-  const { user, refresh: refreshAuth } = useAuth();
-  const { currentRoom, refetchRooms } = useRoom();
   const { modal } = App.useApp();
+  const {
+    user, currentRoom, isOwner,
+    members, membersLoading, filtered, teamTotals,
+    ownerCount, memberCount,
+    search, setSearch, roleFilter, setRoleFilter,
+    copyInvite, handleRegenerate, regeneratePending,
+    handleKick, handleLeave, editOpen, setEditOpen,
+  } = useTeamData();
 
-  const roomId = currentRoom?.id ?? '';
-  const isOwner = currentRoom?.role === 'OWNER';
-
-  const { data: members = [], isLoading: membersLoading } = useGetRoomMembers(roomId);
-  const removeMember = useRemoveRoomMember();
-  const leaveRoom = useLeaveRoom();
-  const regenerateInvite = useRegenerateInviteCode();
-
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
-  const [stats, setStats] = useState<Record<string, MemberStats>>({});
-  const [loadingStatsFor, setLoadingStatsFor] = useState<Set<string>>(new Set());
-
-  const [editOpen, setEditOpen] = useState(false);
-  const [editForm] = Form.useForm<EditFormValues>();
-
-  useEffect(() => {
-    if (!editOpen && user) {
-      editForm.setFieldsValue({ name: user.name, email: user.email ?? '' });
-    }
-  }, [editOpen, user, editForm]);
-
-  const filtered = useMemo<TeamMember[]>(() => {
-    const q = search.trim().toLowerCase();
-    return members
-      .filter((m) => {
-        if (roleFilter === 'owner' && m.role !== 'OWNER') return false;
-        if (roleFilter === 'member' && m.role !== 'MEMBER') return false;
-        if (!q) return true;
-        return (
-          m.name.toLowerCase().includes(q) ||
-          (m.email ?? '').toLowerCase().includes(q)
-        );
-      })
-      .map((m) => ({ ...m, stats: stats[m.id], loadingStats: loadingStatsFor.has(m.id) }))
-      .sort((a, b) => {
-        if (a.role !== b.role) return a.role === 'OWNER' ? -1 : 1;
-        return a.name.localeCompare(b.name);
-      });
-  }, [members, search, roleFilter, stats, loadingStatsFor]);
-
-  const totalStats = useMemo(() => {
-    const values = Object.values(stats);
-    if (!values.length) return null;
-    return values.reduce(
-      (acc, s) => ({
-        apartments: acc.apartments + s.apartments,
-        callbacks: acc.callbacks + s.callbacks,
-        viewings: acc.viewings + s.viewings,
-        done: acc.done + s.done,
-      }),
-      { apartments: 0, callbacks: 0, viewings: 0, done: 0 },
-    );
-  }, [stats]);
-
-  const ensureStats = async (m: RoomMember) => {
-    if (stats[m.id] || loadingStatsFor.has(m.id)) return;
-    setLoadingStatsFor((prev) => new Set(prev).add(m.id));
-    try {
-      const s = await fetchMemberStats(m.id);
-      setStats((prev) => ({ ...prev, [m.id]: s }));
-    } catch {
-      setStats((prev) => ({
-        ...prev,
-        [m.id]: { apartments: 0, callbacks: 0, viewings: 0, done: 0 },
-      }));
-    } finally {
-      setLoadingStatsFor((prev) => {
-        const next = new Set(prev);
-        next.delete(m.id);
-        return next;
-      });
-    }
-  };
-
-  useEffect(() => {
-    members.forEach((m) => { void ensureStats(m); });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members.length, roomId]);
-
-  const copyInvite = async () => {
-    if (!currentRoom) return;
-    try {
-      await navigator.clipboard.writeText(currentRoom.inviteCode);
-      message.success('Код скопирован');
-    } catch {
-      message.error('Не удалось скопировать');
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (!currentRoom) return;
-    try {
-      await regenerateInvite.mutateAsync(currentRoom.id);
-      message.success('Новый код сгенерирован');
-      refetchRooms();
-    } catch (err) {
-      message.error(getApiError(err).message);
-    }
-  };
-
-  const handleKick = async (m: RoomMember) => {
-    if (!currentRoom) return;
-    try {
-      await removeMember.mutateAsync({ roomId: currentRoom.id, userId: m.id });
-      message.success(`${m.name} удалён(а) из команды`);
-      refetchRooms();
-      setStats((prev) => {
-        const { [m.id]: _, ...rest } = prev;
-        return rest;
-      });
-    } catch (err) {
-      message.error(getApiError(err).message);
-    }
-  };
-
-  const confirmKick = (m: RoomMember) => {
+  const kick = (m: RoomMember) => {
     modal.confirm({
       title: `Удалить ${m.name}?`,
       content: 'Участник потеряет доступ к квартирам и напоминаниям этой комнаты.',
       okText: 'Удалить',
       okButtonProps: { danger: true },
       cancelText: 'Отмена',
-      onOk: () => handleKick(m),
+      onOk: () => { void handleKick(m); },
     });
   };
 
-  const handleLeave = async () => {
-    if (!currentRoom) return;
-    try {
-      await leaveRoom.mutateAsync(currentRoom.id);
-      message.success('Вы вышли из комнаты');
-      navigate('/rooms');
-    } catch (err) {
-      message.error(getApiError(err).message);
-    }
-  };
-
-  const submitEdit = async () => {
-    try {
-      const values = await editForm.validateFields();
-      await apiClient.patch<{ data: { user: typeof user } }>(`/users/${user?.id}`, {
-        name: values.name.trim(),
-        email: values.email?.trim() || undefined,
-      });
-      message.success('Профиль обновлён');
-      setEditOpen(false);
-      await refreshAuth();
-    } catch (err) {
-      if (editForm.isFieldTouched?.('name') || editForm.isFieldTouched?.('email')) {
-        message.error(getApiError(err).message);
-      }
-    }
+  const leave = () => {
+    modal.confirm({
+      title: 'Выйти из команды?',
+      content: 'Вы потеряете доступ к квартирам этой комнаты.',
+      okText: 'Выйти',
+      okButtonProps: { danger: true },
+      cancelText: 'Отмена',
+      onOk: async () => {
+        await handleLeave();
+        navigate('/rooms');
+      },
+    });
   };
 
   if (!currentRoom) {
     return (
-      <Page>
-        <Shell>
-          <EmptyState>
-            <TeamOutlined className="icon" />
-            <div className="title">Комната не выбрана</div>
-            <div className="hint">Выберите или создайте комнату, чтобы увидеть команду</div>
-            <HeroBtn onClick={() => navigate('/rooms')} style={{ marginTop: 12 }}>
-              <HomeOutlined /> К комнатам
-            </HeroBtn>
-          </EmptyState>
-        </Shell>
-      </Page>
+      <Shell>
+        <EmptyState>
+          <TeamOutlined className="icon" />
+          <div className="title">Комната не выбрана</div>
+          <div className="hint">Выберите или создайте комнату, чтобы увидеть команду</div>
+          <HeroBtn onClick={() => navigate('/rooms')} style={{ marginTop: 12 }}>
+            <HomeOutlined /> К комнатам
+          </HeroBtn>
+        </EmptyState>
+      </Shell>
     );
   }
 
-  const ownerCount = members.filter((m) => m.role === 'OWNER').length;
-
   return (
-    <Page>
-      <Shell initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <HeroCard initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <HeroPattern />
-          <HeroRow>
-            <div>
-              <HeroHeading>Команда · {currentRoom.name}</HeroHeading>
-              <HeroSubtitle>
-                {members.length} {members.length === 1 ? 'участник' : 'участников'} · {ownerCount} {ownerCount === 1 ? 'владелец' : 'владельцев'}
-              </HeroSubtitle>
-            </div>
-            <HeroActions>
-              <HeroBtn $variant="ghost" onClick={copyInvite}>
-                <CopyOutlined /> {currentRoom.inviteCode}
+    <Shell initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <HeroCard initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+        <HeroRow>
+          <div>
+            <HeroLabel>Команда</HeroLabel>
+            <HeroTitle>{currentRoom.name}</HeroTitle>
+            <HeroLead>
+              {members.length === 0
+                ? 'Здесь пока никого нет — пригласите соратников по коду'
+                : `${members.length} ${members.length === 1 ? 'человек' : members.length < 5 ? 'человека' : 'человек'} в подборке`}
+            </HeroLead>
+          </div>
+          <HeroActions>
+            <HeroBtn $variant="ghost" onClick={copyInvite}>
+              <CopyOutlined />
+              <span className="btn-label-sm">Код</span>
+              <span className="btn-code">{currentRoom.inviteCode}</span>
+            </HeroBtn>
+            {isOwner && (
+              <HeroBtn onClick={handleRegenerate} disabled={regeneratePending}>
+                <UserAddOutlined />
+                <span>Новый код</span>
               </HeroBtn>
-              {isOwner && (
-                <HeroBtn onClick={handleRegenerate} disabled={regenerateInvite.isPending}>
-                  <UserAddOutlined /> Новый код
-                </HeroBtn>
-              )}
-              <HeroBtn onClick={() => navigate('/rooms/manage')}>
-                <SettingOutlined /> Управление
-              </HeroBtn>
-            </HeroActions>
-          </HeroRow>
+            )}
+            <HeroBtn onClick={() => navigate('/rooms/manage')}>
+              <SettingOutlined />
+              <span>Управление</span>
+            </HeroBtn>
+          </HeroActions>
+        </HeroRow>
 
-          <StatsRow>
-            <StatTile>
-              <span className="value">{members.length}</span>
-              <span className="label">В команде</span>
-            </StatTile>
-            <StatTile>
-              <span className="value">{totalStats?.apartments ?? '—'}</span>
-              <span className="label">Объектов</span>
-            </StatTile>
-            <StatTile>
-              <span className="value">{totalStats?.callbacks ?? '—'}</span>
-              <span className="label">Перезвонов</span>
-            </StatTile>
-            <StatTile>
-              <span className="value">{totalStats?.done ?? '—'}</span>
-              <span className="label">Завершено</span>
-            </StatTile>
-          </StatsRow>
-        </HeroCard>
+        <HeroMetaRow>
+          <MetaPill>
+            <span className="value">{members.length}</span>
+            <span className="label">в команде</span>
+          </MetaPill>
+          <MetaPill>
+            <span className="value">{ownerCount}</span>
+            <span className="label">{ownerCount === 1 ? 'владелец' : 'владельца'}</span>
+          </MetaPill>
+          <MetaPill>
+            <span className="value">{teamTotals.apartments || '—'}</span>
+            <span className="label">объявлений</span>
+          </MetaPill>
+          <MetaPill>
+            <span className="value">{teamTotals.callbacks || '—'}</span>
+            <span className="label">перезвонов</span>
+          </MetaPill>
+        </HeroMetaRow>
+      </HeroCard>
 
-        <ControlsRow>
-          <SearchInput>
-            <span className="icon"><SearchOutlined /></span>
+      <RosterCard initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <RosterToolbar>
+          <SearchField>
+            <SearchOutlined className="icon" />
             <input
-              placeholder="Поиск по имени или email"
+              placeholder="Найти по имени или email"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label="Поиск участников"
             />
-          </SearchInput>
+          </SearchField>
           <ChipsRow>
-            <FilterChip $active={roleFilter === 'all'} onClick={() => setRoleFilter('all')}>
-              Все ({members.length})
+            <FilterChip
+              type="button"
+              $active={roleFilter === 'all'}
+              onClick={() => setRoleFilter('all')}
+            >
+              Все · {members.length}
             </FilterChip>
-            <FilterChip $active={roleFilter === 'owner'} onClick={() => setRoleFilter('owner')}>
-              <CrownOutlined /> Владельцы ({ownerCount})
+            <FilterChip
+              type="button"
+              $active={roleFilter === 'owner'}
+              onClick={() => setRoleFilter('owner')}
+            >
+              <CrownOutlined /> Владельцы · {ownerCount}
             </FilterChip>
-            <FilterChip $active={roleFilter === 'member'} onClick={() => setRoleFilter('member')}>
-              Участники ({members.length - ownerCount})
+            <FilterChip
+              type="button"
+              $active={roleFilter === 'member'}
+              onClick={() => setRoleFilter('member')}
+            >
+              Участники · {memberCount}
             </FilterChip>
           </ChipsRow>
-        </ControlsRow>
+        </RosterToolbar>
 
         {isOwner && (
-          <Hint>
+          <OwnerHint>
             <FilterOutlined />
-            Вы владелец комнаты — можете удалять участников и обновлять код приглашения.
-          </Hint>
+            <span>
+              Вы владелец — можете удалять участников и обновлять код приглашения.
+              {' '}
+              Код меняется автоматически, прежний перестаёт работать.
+            </span>
+          </OwnerHint>
         )}
 
-        <TableCard initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          {membersLoading ? (
-            <div style={{ padding: 16 }}>
-              {[0, 1, 2].map((i) => (
-                <SkeletonRow key={i}>
-                  <Skeleton.Avatar active size={48} shape="circle" />
-                  <div style={{ flex: 1 }}>
-                    <Skeleton active paragraph={{ rows: 1, width: ['60%'] }} title={false} />
-                    <Skeleton active paragraph={{ rows: 1, width: ['40%'] }} title={false} />
-                  </div>
-                  <Skeleton.Button active size="large" style={{ width: 80 }} />
-                </SkeletonRow>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={members.length === 0 ? 'В команде пока никого' : 'Ничего не найдено'}
-              style={{ padding: '40px 0' }}
-            >
-              {members.length === 0 && (
-                <HeroBtn onClick={copyInvite}>
-                  <CopyOutlined /> Скопировать код
-                </HeroBtn>
-              )}
-            </Empty>
-          ) : (
-            <MemberGrid>
-              {filtered.map((m, idx) => {
-                const isSelf = m.id === user?.id;
-                const isMemberOwner = m.role === 'OWNER';
-                const memberStats = m.stats;
-                const initials = initialsOf(m.name);
-                const hue = hueFromId(m.id);
-                return (
-                  <MemberRow
-                    key={m.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.03 }}
-                  >
-                    <Avatar $hue={hue} aria-hidden>
+        {membersLoading ? (
+          <div style={{ padding: 16 }}>
+            {[0, 1, 2].map((i) => (
+              <SkeletonRow key={i}>
+                <Skeleton.Avatar active size={48} shape="circle" />
+                <div style={{ flex: 1 }}>
+                  <Skeleton active paragraph={{ rows: 1, width: ['60%'] }} title={false} />
+                  <Skeleton active paragraph={{ rows: 1, width: ['40%'] }} title={false} />
+                </div>
+                <Skeleton.Button active size="large" style={{ width: 80 }} />
+              </SkeletonRow>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              members.length === 0
+                ? 'В команде пока никого'
+                : 'Никого не нашли — попробуйте другой фильтр'
+            }
+            style={{ padding: '48px 0' }}
+          >
+            {members.length === 0 && (
+              <HeroBtn onClick={copyInvite}>
+                <CopyOutlined /> Скопировать код приглашения
+              </HeroBtn>
+            )}
+          </Empty>
+        ) : (
+          <RosterList>
+            {filtered.map((m, idx) => {
+              const isSelf = m.id === user?.id;
+              const isMemberOwner = m.role === 'OWNER';
+              const memberStats = m.stats;
+              const initials = initialsOf(m.name);
+              const tone = AVATAR_TONES[avatarTone(m.id)];
+              return (
+                <RosterRow
+                  key={m.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                  $owner={isMemberOwner}
+                >
+                  <RosterRail $owner={isMemberOwner}>
+                    <div
+                      className="avatar"
+                      style={{ background: `linear-gradient(135deg, ${tone.from}, ${tone.to})` }}
+                    >
                       {initials}
-                    </Avatar>
-                    <Main>
-                      <NameRow>
-                        <NameText>{m.name}</NameText>
-                        {isMemberOwner && (
-                          <RoleTag $owner>
-                            <CrownOutlined /> Владелец
-                          </RoleTag>
-                        )}
-                        {!isMemberOwner && <RoleTag>Участник</RoleTag>}
-                        {isSelf && <SelfBadge>Вы</SelfBadge>}
-                      </NameRow>
-                      {m.email && (
-                        <Meta>
-                          <span><MailOutlined /> {m.email}</span>
-                          <span><ClockCircleOutlined /> с {dayjs(m.joinedAt).format('DD MMM YYYY')}</span>
-                        </Meta>
-                      )}
-                      {!m.email && (
-                        <Meta>
-                          <span><ClockCircleOutlined /> с {dayjs(m.joinedAt).format('DD MMM YYYY')}</span>
-                        </Meta>
-                      )}
-                    </Main>
+                    </div>
+                    <RailName>{m.name.split(' ')[0]}</RailName>
+                    {isMemberOwner ? (
+                      <RailTag $owner><CrownOutlined /> owner</RailTag>
+                    ) : (
+                      <RailTag>member</RailTag>
+                    )}
+                  </RosterRail>
 
-                    <StatsInline>
+                  <RosterBody>
+                    <Identity>
+                      <NameLine>
+                        <NameText>{m.name}</NameText>
+                      </NameLine>
+                      <BadgeRow>
+                        {isMemberOwner && <RoleBadge $owner><CrownOutlined /> Владелец</RoleBadge>}
+                        {!isMemberOwner && <RoleBadge>Участник</RoleBadge>}
+                        {isSelf && <SelfBadge>это вы</SelfBadge>}
+                      </BadgeRow>
+                      {m.email && (
+                        <ContactLine>
+                          <MailOutlined /> {m.email}
+                        </ContactLine>
+                      )}
+                      <JoinedLine>
+                        <ClockCircleOutlined /> в команде с {dayjs(m.joinedAt).format('DD MMM YYYY')}
+                      </JoinedLine>
+                    </Identity>
+
+                    <ActivityCell>
                       {memberStats ? (
                         <>
-                          <Tooltip title="Объектов в работе">
-                            <StatPill $tone="amber">
-                              <span className="value">{memberStats.apartments}</span>
-                              <span className="label">{STATUS_LABELS.apartments}</span>
-                            </StatPill>
-                          </Tooltip>
-                          <Tooltip title="Перезвонов">
-                            <StatPill $tone="muted">
-                              <span className="value">{memberStats.callbacks}</span>
-                              <span className="label">{STATUS_LABELS.callbacks}</span>
-                            </StatPill>
-                          </Tooltip>
-                          <Tooltip title="Просмотров">
-                            <StatPill $tone="sage">
-                              <span className="value">{memberStats.viewings}</span>
-                              <span className="label">{STATUS_LABELS.viewings}</span>
-                            </StatPill>
-                          </Tooltip>
+                          <ActivityHead>В работе</ActivityHead>
+                          <ActivityValue>{memberStats.apartments}</ActivityValue>
+                          <ActivityLabel>объявлений</ActivityLabel>
                         </>
                       ) : (
-                        <StatPill $tone="muted">
-                          <span className="value">…</span>
-                          <span className="label">считаем</span>
-                        </StatPill>
+                        <Pulse>считаем</Pulse>
                       )}
-                    </StatsInline>
+                    </ActivityCell>
 
-                    <Actions>
-                      {isSelf ? (
-                        <Tooltip title="Редактировать свой профиль">
-                          <IconBtn
-                            $variant="primary"
-                            onClick={() => setEditOpen(true)}
-                            aria-label="Редактировать профиль"
-                            className="btn-with-label"
-                          >
-                            <EditOutlined />
-                            <span className="btn-label">Изменить</span>
-                          </IconBtn>
-                        </Tooltip>
+                    <ActivityCell>
+                      {memberStats ? (
+                        <>
+                          <ActivityHead>Перезвоны</ActivityHead>
+                          <ActivityValue>{memberStats.callbacks}</ActivityValue>
+                          <ActivityLabel>ждут ответа</ActivityLabel>
+                        </>
                       ) : (
-                        <Tooltip title="Открыть профиль">
-                          <IconBtn
-                            onClick={() => navigate(`/users/${m.id}`)}
-                            aria-label="Открыть профиль"
-                          >
-                            <IdcardOutlined />
-                          </IconBtn>
-                        </Tooltip>
+                        <Pulse>…</Pulse>
                       )}
-                      {isOwner && !isMemberOwner && !isSelf && (
-                        <Tooltip title="Удалить из команды">
-                          <IconBtn
-                            $variant="danger"
-                            onClick={() => confirmKick(m)}
-                            aria-label="Удалить"
-                          >
-                            <DeleteOutlined />
-                          </IconBtn>
-                        </Tooltip>
+                    </ActivityCell>
+
+                    <ActivityCell>
+                      {memberStats ? (
+                        <>
+                          <ActivityHead>Просмотры</ActivityHead>
+                          <ActivityValue>{memberStats.viewings}</ActivityValue>
+                          <ActivityLabel>назначены</ActivityLabel>
+                        </>
+                      ) : (
+                        <Pulse>…</Pulse>
                       )}
-                      {!isOwner && isSelf && !isMemberOwner && (
-                        <Tooltip title="Покинуть команду">
-                          <IconBtn
-                            $variant="danger"
-                            onClick={() => {
-                              modal.confirm({
-                                title: 'Выйти из команды?',
-                                content: 'Вы потеряете доступ к квартирам этой комнаты.',
-                                okText: 'Выйти',
-                                okButtonProps: { danger: true },
-                                cancelText: 'Отмена',
-                                onOk: handleLeave,
-                              });
-                            }}
-                            aria-label="Покинуть"
-                          >
-                            <DeleteOutlined />
-                          </IconBtn>
-                        </Tooltip>
+                    </ActivityCell>
+
+                    <MemberActions
+                      isOwner={isOwner}
+                      isSelf={isSelf}
+                      isMemberOwner={isMemberOwner}
+                      m={m}
+                      navigate={navigate}
+                      onEdit={() => setEditOpen(true)}
+                      onKick={() => kick(m)}
+                      onLeave={leave}
+                    />
+                  </RosterBody>
+                </RosterRow>
+              );
+            })}
+          </RosterList>
+        )}
+      </RosterCard>
+
+      <BottomCallout>
+        <div>
+          <CalloutLabel>Код приглашения</CalloutLabel>
+          <CalloutCode>{currentRoom.inviteCode}</CalloutCode>
+        </div>
+        <CalloutAction type="button" onClick={copyInvite}>
+          <CopyOutlined /> <span>Скопировать</span>
+        </CalloutAction>
+      </BottomCallout>
+
+      <EditProfileModal open={editOpen} onCancel={() => setEditOpen(false)} user={user} />
+    </Shell>
+  );
+}
+
+function MobileTeamView() {
+  const navigate = useNavigate();
+  const { modal } = App.useApp();
+  const {
+    user, currentRoom, isOwner,
+    members, membersLoading, filtered,
+    ownerCount, memberCount,
+    search, setSearch, roleFilter, setRoleFilter,
+    copyInvite, handleRegenerate, regeneratePending,
+    handleKick, handleLeave, editOpen, setEditOpen,
+  } = useTeamData();
+
+  const kick = (m: RoomMember) => {
+    modal.confirm({
+      title: `Удалить ${m.name}?`,
+      content: 'Участник потеряет доступ к квартирам и напоминаниям этой комнаты.',
+      okText: 'Удалить',
+      okButtonProps: { danger: true },
+      cancelText: 'Отмена',
+      onOk: () => { void handleKick(m); },
+    });
+  };
+
+  const leave = () => {
+    modal.confirm({
+      title: 'Выйти из команды?',
+      content: 'Вы потеряете доступ к квартирам этой комнаты.',
+      okText: 'Выйти',
+      okButtonProps: { danger: true },
+      cancelText: 'Отмена',
+      onOk: async () => {
+        await handleLeave();
+        navigate('/rooms');
+      },
+    });
+  };
+
+  if (!currentRoom) {
+    return (
+      <MobileShell>
+        <MobileTopBar>
+          <MobileBrand>
+            <MobileBrandLogo><HomeOutlined /></MobileBrandLogo>
+            <MobileBrandText>
+              <div>FlatFinder</div>
+              <MobileBrandCaption>Совместный поиск</MobileBrandCaption>
+            </MobileBrandText>
+          </MobileBrand>
+          <MobileTopActions>
+            <MobileAvatar size={36}>{user ? initialsOf(user.name) : 'FF'}</MobileAvatar>
+          </MobileTopActions>
+        </MobileTopBar>
+        <MobileBody>
+          <MobileEmpty>
+            <TeamOutlined style={{ fontSize: 32 }} />
+            <div style={{ fontWeight: 700, color: '#1e1b18' }}>Комната не выбрана</div>
+            <div style={{ fontSize: 13 }}>Выберите или создайте комнату, чтобы увидеть команду</div>
+            <HeroBtn type="button" onClick={() => navigate('/rooms')} style={{ marginTop: 8 }}>
+              <HomeOutlined /> К комнатам
+            </HeroBtn>
+          </MobileEmpty>
+        </MobileBody>
+      </MobileShell>
+    );
+  }
+
+  return (
+    <MobileShell>
+      <MobileTopBar>
+        <MobileBrand>
+          <MobileBrandLogo><HomeOutlined /></MobileBrandLogo>
+          <MobileBrandText>
+            <div>FlatFinder</div>
+            <MobileBrandCaption>{currentRoom.name}</MobileBrandCaption>
+          </MobileBrandText>
+        </MobileBrand>
+        <MobileTopActions>
+          <MobileAvatar size={36}>{user ? initialsOf(user.name) : 'FF'}</MobileAvatar>
+        </MobileTopActions>
+      </MobileTopBar>
+
+      <MobileBody>
+        <MobileHeading>
+          Команда <span>{members.length} · {ownerCount} владельцев</span>
+        </MobileHeading>
+        <MobileSub>
+          {members.length === 0
+            ? 'Здесь пока никого'
+            : 'Поделитесь кодом ниже, чтобы добавить соратников'}
+        </MobileSub>
+
+        <MobileChips>
+          <MobileChip
+            type="button"
+            $active={roleFilter === 'all'}
+            onClick={() => setRoleFilter('all')}
+          >
+            Все · {members.length}
+          </MobileChip>
+          <MobileChip
+            type="button"
+            $active={roleFilter === 'owner'}
+            onClick={() => setRoleFilter('owner')}
+          >
+            Владельцы · {ownerCount}
+          </MobileChip>
+          <MobileChip
+            type="button"
+            $active={roleFilter === 'member'}
+            onClick={() => setRoleFilter('member')}
+          >
+            Участники · {memberCount}
+          </MobileChip>
+        </MobileChips>
+
+        <MobileSearchWrap>
+          <SearchOutlined className="icon" />
+          <MobileSearch
+            placeholder="Поиск по имени или email"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </MobileSearchWrap>
+
+        {isOwner && (
+          <MobileOwnerHint>
+            <FilterOutlined />
+            <span>Вы владелец — можете удалять и обновлять код.</span>
+          </MobileOwnerHint>
+        )}
+
+        <MobileRoster>
+          {membersLoading ? (
+            <MobileEmpty>Загружаем команду…</MobileEmpty>
+          ) : filtered.length === 0 ? (
+            <MobileEmpty>
+              {members.length === 0
+                ? 'В команде пока никого'
+                : 'Никого не нашли'}
+            </MobileEmpty>
+          ) : (
+            filtered.map((m) => {
+              const isSelf = m.id === user?.id;
+              const isMemberOwner = m.role === 'OWNER';
+              const initials = initialsOf(m.name);
+              const tone = AVATAR_TONES[avatarTone(m.id)];
+              const memberStats = m.stats;
+              return (
+                <MobileRosterCard key={m.id} $owner={isMemberOwner}>
+                  <MobileRail $owner={isMemberOwner}>
+                    <div
+                      className="avatar"
+                      style={{ background: `linear-gradient(135deg, ${tone.from}, ${tone.to})` }}
+                    >
+                      {initials}
+                    </div>
+                  </MobileRail>
+                  <MobileIdentity>
+                    <MobileName>{m.name}</MobileName>
+                    <MobileBadgeRow>
+                      {isMemberOwner && (
+                        <MobileRole $owner>
+                          <CrownOutlined /> владелец
+                        </MobileRole>
                       )}
-                    </Actions>
-                  </MemberRow>
-                );
-              })}
-            </MemberGrid>
+                      {!isMemberOwner && <MobileRole>участник</MobileRole>}
+                      {isSelf && <MobileSelfBadge>вы</MobileSelfBadge>}
+                    </MobileBadgeRow>
+                    {m.email && (
+                      <MobileMetaLine>
+                        <MailOutlined /> {m.email}
+                      </MobileMetaLine>
+                    )}
+                    <MobileMetaLine>
+                      <ClockCircleOutlined /> с {dayjs(m.joinedAt).format('DD MMM YYYY')}
+                    </MobileMetaLine>
+                  </MobileIdentity>
+                  <MobileStats>
+                    {memberStats ? (
+                      <>
+                        <MobileStat>
+                          <MobileStatValue>{memberStats.apartments}</MobileStatValue>
+                          <MobileStatLabel>объявлений</MobileStatLabel>
+                        </MobileStat>
+                        <MobileStat>
+                          <MobileStatValue>{memberStats.callbacks}</MobileStatValue>
+                          <MobileStatLabel>перезвонов</MobileStatLabel>
+                        </MobileStat>
+                        <MobileStat>
+                          <MobileStatValue>{memberStats.viewings}</MobileStatValue>
+                          <MobileStatLabel>просмотров</MobileStatLabel>
+                        </MobileStat>
+                      </>
+                    ) : (
+                      <MobileStat>
+                        <MobileStatValue>…</MobileStatValue>
+                        <MobileStatLabel>считаем</MobileStatLabel>
+                      </MobileStat>
+                    )}
+                  </MobileStats>
+                  <MobileActions>
+                    {isSelf ? (
+                      <MobileActionBtn
+                        type="button"
+                        onClick={() => setEditOpen(true)}
+                        aria-label="Редактировать профиль"
+                      >
+                        <EditOutlined /> Изменить
+                      </MobileActionBtn>
+                    ) : (
+                      <MobileActionBtn
+                        type="button"
+                        onClick={() => navigate(`/users/${m.id}`)}
+                        aria-label="Открыть профиль"
+                      >
+                        <IdcardOutlined /> Профиль
+                      </MobileActionBtn>
+                    )}
+                    {isOwner && !isMemberOwner && !isSelf && (
+                      <MobileActionDanger
+                        type="button"
+                        onClick={() => kick(m)}
+                        aria-label="Удалить"
+                      >
+                        <DeleteOutlined />
+                      </MobileActionDanger>
+                    )}
+                    {!isOwner && isSelf && !isMemberOwner && (
+                      <MobileActionDanger
+                        type="button"
+                        aria-label="Покинуть"
+                        onClick={leave}
+                      >
+                        <DeleteOutlined />
+                      </MobileActionDanger>
+                    )}
+                  </MobileActions>
+                </MobileRosterCard>
+              );
+            })
           )}
-        </TableCard>
+        </MobileRoster>
 
-        <InviteCallout>
+        <MobileCallout>
           <div>
-            <div className="label">Код приглашения</div>
-            <div className="code">{currentRoom.inviteCode}</div>
+            <MobileCalloutLabel>Код приглашения</MobileCalloutLabel>
+            <MobileCalloutCode>{currentRoom.inviteCode}</MobileCalloutCode>
           </div>
-          <HeroBtn onClick={copyInvite} style={{ marginLeft: 'auto' }}>
+          <MobileCalloutCopy type="button" onClick={copyInvite}>
             <CopyOutlined /> Скопировать
-          </HeroBtn>
-        </InviteCallout>
-      </Shell>
+          </MobileCalloutCopy>
+        </MobileCallout>
 
-      <Modal
-        title="Редактировать профиль"
-        open={editOpen}
-        onCancel={() => setEditOpen(false)}
-        onOk={submitEdit}
-        okText="Сохранить"
-        cancelText="Отмена"
-        destroyOnClose
-        okButtonProps={{ autoFocus: true }}
-      >
-        <Form form={editForm} layout="vertical" preserve={false}>
-          <FormRow>
-            <label htmlFor="team-edit-name">Имя</label>
-            <Form.Item
-              name="name"
-              rules={[{ required: true, message: 'Введите имя' }, { min: 2, message: 'Минимум 2 символа' }]}
-              noStyle
+        {isOwner && (
+          <MobileOwnerHint>
+            <UserAddOutlined />
+            <span>
+              <strong>Новый код</strong> — старый перестаёт работать сразу после выдачи.
+            </span>
+            <HeroBtn
+              type="button"
+              onClick={handleRegenerate}
+              disabled={regeneratePending}
+              style={{ marginLeft: 'auto', height: 36, padding: '0 14px', fontSize: 13 }}
             >
-              <input id="team-edit-name" placeholder="Ваше имя" />
-            </Form.Item>
-          </FormRow>
-          <FormRow>
-            <label htmlFor="team-edit-email">Email</label>
-            <Form.Item
-              name="email"
-              rules={[{ type: 'email', message: 'Не похоже на email' }]}
-              noStyle
-            >
-              <input id="team-edit-email" placeholder="email@example.com" />
-            </Form.Item>
-          </FormRow>
-        </Form>
-      </Modal>
+              <UserAddOutlined /> Сгенерировать
+            </HeroBtn>
+          </MobileOwnerHint>
+        )}
+      </MobileBody>
+
+      <EditProfileModal open={editOpen} onCancel={() => setEditOpen(false)} user={user} />
+    </MobileShell>
+  );
+}
+
+export function TeamPage() {
+  return (
+    <Page>
+      <TeamDataProvider>
+        <DesktopTeamView />
+        <MobileTeamView />
+      </TeamDataProvider>
     </Page>
   );
 }

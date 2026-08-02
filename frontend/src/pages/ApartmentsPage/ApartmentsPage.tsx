@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Table, Tag, Button, Space, Input, Select, Drawer, Form, Modal,
   message, Popconfirm, Tooltip, Row, Col, Segmented, Image, Upload, Pagination,
@@ -9,6 +9,7 @@ import {
   PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined,
   EyeOutlined, EnvironmentOutlined, LinkOutlined, PhoneOutlined,
   CameraOutlined, CodeOutlined, HomeOutlined, BellOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import { theme } from '../../app/styles/theme';
 import { useAuth } from '../../app/providers/AuthProvider';
@@ -22,9 +23,10 @@ import type {
   Apartment, ApartmentStatus, CreateApartmentPayload, HtmlParseSource, ParsedApartment,
 } from '../../entities/Flat/model/types';
 import {
-  PageHeader, PageTitle, FiltersRow, SearchInput, GlassCard,
-  ApartmentRow, AptThumb, AptInfo, AptTitle, AptMeta, PriceTag, TagPills,
-  DrawerStyled, FormSection, SectionTitle, EmptyState,
+  PageHeader, PageHeaderTitleGroup, PageTitle, PageSubtitle, FiltersRow, SearchInput,
+  ResultsBadge, GlassCard,
+  ApartmentRow, AptThumb, AptInfo, AptTitle, AptMeta, PriceTag, TagPills, RowActions,
+  DrawerStyled, FormSection, SectionTitle, EmptyState, EmptyIconWrap,
   ModeSwitchWrapper, LinkModeHint, ImportButton, AddApartmentButton,
   PhotoGrid, PhotoTile, PhotoRemoveBtn, PhotoAddRow, PhotoCounter,
   TitleButton, SourceLinkButton, DesktopList, MobileList, MobileApartmentCard,
@@ -51,7 +53,6 @@ function HouseIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
-      style={{ marginBottom: 12, display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
     >
       <defs>
         <linearGradient id="house-grad" x1="0" y1="0" x2="0" y2="1">
@@ -189,6 +190,7 @@ export function ApartmentsPage() {
 
 const [form] = Form.useForm<ApartmentFormValues>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const fetchData = useCallback(async () => {
@@ -208,6 +210,18 @@ const [form] = Form.useForm<ApartmentFormValues>();
   }, [page, pageSize, search, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Открываем форму с превью, если сюда пришли со страницы /import (расширение Chrome).
+  useEffect(() => {
+    const prefill = (location.state as { prefill?: ParsedApartment } | null)?.prefill;
+    if (!prefill) return;
+    setEditing(null);
+    form.resetFields();
+    applyParsedData(prefill);
+    setDrawerOpen(true);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const openCreate = () => {
     setEditing(null);
@@ -393,7 +407,7 @@ const [form] = Form.useForm<ApartmentFormValues>();
             {apt.photos && apt.photos[0] ? (
               <img src={apt.photos[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} loading="lazy" />
             ) : (
-              '🏠'
+              <HomeOutlined />
             )}
           </AptThumb>
           <AptInfo>
@@ -462,7 +476,7 @@ const [form] = Form.useForm<ApartmentFormValues>();
     {
       title: '', key: 'actions', width: 120, fixed: 'right',
       render: (_: unknown, apt: Apartment) => (
-        <Space>
+        <RowActions>
           <Tooltip title="Просмотр">
             <Button size="small" icon={<EyeOutlined />} onClick={() => navigate(`/apartments/${apt.id}`)} />
           </Tooltip>
@@ -474,7 +488,7 @@ const [form] = Form.useForm<ApartmentFormValues>();
               <Button size="small" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
-        </Space>
+        </RowActions>
       ),
     },
   ];
@@ -483,7 +497,12 @@ const [form] = Form.useForm<ApartmentFormValues>();
     <div>
       <DesktopList>
         <PageHeader>
-          <PageTitle>Квартиры</PageTitle>
+          <PageHeaderTitleGroup>
+            <PageTitle>Квартиры</PageTitle>
+            <PageSubtitle>
+              {total > 0 ? `${total} ${total === 1 ? 'объявление' : 'объявлений'} в подборке` : 'Пока нет объявлений'}
+            </PageSubtitle>
+          </PageHeaderTitleGroup>
           <HeaderActions>
             <ImportButton type="button" onClick={() => setImportModalOpen(true)}>
               <LinkOutlined /> Импорт по ссылке
@@ -508,11 +527,15 @@ const [form] = Form.useForm<ApartmentFormValues>();
           <Select
             placeholder="Статус"
             allowClear
-            style={{ width: 160 }}
+            style={{ width: 170 }}
+            suffixIcon={<FilterOutlined style={{ color: theme.colors.text.muted }} />}
             value={statusFilter || undefined}
             onChange={(v) => { setStatusFilter(v ?? ''); setPage(1); }}
             options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
           />
+          <ResultsBadge>
+            <HomeOutlined /> {total} {total === 1 ? 'квартира' : 'квартир'}
+          </ResultsBadge>
         </FiltersRow>
 
         <GlassCard>
@@ -530,7 +553,14 @@ const [form] = Form.useForm<ApartmentFormValues>();
               onChange: (p, ps) => { setPage(p); setPageSize(ps); },
             }}
             scroll={{ x: 700 }}
-            locale={{ emptyText: <EmptyState><HouseIcon />Квартиры не найдены</EmptyState> }}
+            locale={{
+              emptyText: (
+                <EmptyState>
+                  <EmptyIconWrap><HouseIcon /></EmptyIconWrap>
+                  Квартиры не найдены
+                </EmptyState>
+              ),
+            }}
           />
         </GlassCard>
       </DesktopList>
@@ -605,9 +635,9 @@ const [form] = Form.useForm<ApartmentFormValues>();
                     {apt.photos?.[0] ? (
                       <img src={apt.photos[0]} alt="" loading="lazy" />
                     ) : (
-                      '🏠'
+                      <HomeOutlined />
                     )}
-                    <MobileStatusBadge>{STATUS_LABELS[apt.status]}</MobileStatusBadge>
+                    <MobileStatusBadge $color={STATUS_COLORS[apt.status]}>{STATUS_LABELS[apt.status]}</MobileStatusBadge>
                     {apt.photos && apt.photos.length > 1 && (
                       <MobilePhotoCount><CameraOutlined /> {apt.photos.length}</MobilePhotoCount>
                     )}
@@ -864,6 +894,8 @@ const [form] = Form.useForm<ApartmentFormValues>();
           options={[
             { value: 'avito', label: 'Avito' },
             { value: 'domclick', label: 'DomClick' },
+            { value: 'cian', label: 'Cian' },
+            { value: 'yandex', label: 'Yandex' },
           ]}
           block
           style={{ marginBottom: 12 }}

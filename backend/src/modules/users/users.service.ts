@@ -7,26 +7,10 @@ import { Prisma } from '@prisma/client';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(args: { page: number; pageSize: number }) {
-    const skip = (args.page - 1) * args.pageSize;
-    const [total, users] = await this.prisma.$transaction([
-      this.prisma.user.count(),
-      this.prisma.user.findMany({
-        skip,
-        take: args.pageSize,
-        select: {
-          id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-    ]);
-    return { data: users, meta: { page: args.page, pageSize: args.pageSize, total } };
-  }
-
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+      select: { id: true, username: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
@@ -37,7 +21,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: dto as Prisma.UserUpdateInput,
-      select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+      select: { id: true, username: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
     });
   }
 }

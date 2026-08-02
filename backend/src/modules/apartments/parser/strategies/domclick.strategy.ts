@@ -4,7 +4,7 @@ import type { Currency } from '@prisma/client';
 import { BaseListingParser, ParsedListing } from './base.strategy.js';
 import { ParserBlockedError, ParserInvalidPageError } from './cian.strategy.js';
 import { normalizeCurrency, BLOCK_MARKERS } from '../utils/light-fetch.js';
-import { extractPhones } from '../utils/phones.js';
+import { extractPhones, extractPhonesFromTelLinks } from '../utils/phones.js';
 import { randomDelay } from '../utils/delays.js';
 import { createStealthContext, launchStealthBrowser } from '../utils/stealth.js';
 
@@ -85,7 +85,7 @@ export class DomClickParser extends BaseListingParser {
     if (fromMeta) return fromMeta;
 
     try {
-      return this.extractFromDom(load(html), sourceUrl);
+      return this.extractFromDom(load(html), sourceUrl, html);
     } catch (err) {
       if (opts.throwOnFail) throw err;
       return null;
@@ -132,7 +132,7 @@ export class DomClickParser extends BaseListingParser {
     const district = extractDistrict(address);
     const title = buildTitle({ rooms, area, floor, totalFloors, street, city });
     const photos = normalizePhotos(productCard.photos);
-    const phones = collectPhones(agent.phone, description);
+    const phones = collectPhones(agent.phone, description, html);
     const currency = normalizeCurrency(
       typeof priceInfo.currency === 'string' ? priceInfo.currency : 'RUB',
     );
@@ -255,7 +255,7 @@ export class DomClickParser extends BaseListingParser {
     return undefined;
   }
 
-  extractFromDom($: ReturnType<typeof load>, sourceUrl: string): ParsedListing {
+  extractFromDom($: ReturnType<typeof load>, sourceUrl: string, html: string): ParsedListing {
     const title = $('h1').first().text().trim() || $('[data-testid="object-title"]').first().text().trim() || '';
     const priceText = $('[data-testid="price-value"]').first().text().trim()
       || ($('[itemprop="price"]').attr('content') ?? '');
@@ -269,6 +269,8 @@ export class DomClickParser extends BaseListingParser {
       throw new ParserInvalidPageError('DomClick: не удалось разобрать страницу');
     }
 
+    const phones = extractPhonesFromTelLinks(html);
+
     return {
       source: 'LINK',
       sourceUrl,
@@ -277,6 +279,7 @@ export class DomClickParser extends BaseListingParser {
       currency: 'RUB',
       city,
       address: address || undefined,
+      ...(phones.length > 0 ? { phones } : {}),
     };
   }
 
@@ -391,13 +394,14 @@ function normalizePhotos(photos: unknown): string[] {
   return out;
 }
 
-function collectPhones(agentPhone: unknown, description?: string): string[] {
+function collectPhones(agentPhone: unknown, description?: string, html?: string): string[] {
   const fromDesc = extractPhones(description);
+  const fromTel = html ? extractPhonesFromTelLinks(html) : [];
   if (typeof agentPhone === 'string' && agentPhone && !/\*/.test(agentPhone)) {
     const fromAgent = extractPhones(agentPhone);
-    return Array.from(new Set([...fromAgent, ...fromDesc]));
+    return Array.from(new Set([...fromAgent, ...fromDesc, ...fromTel]));
   }
-  return fromDesc;
+  return Array.from(new Set([...fromDesc, ...fromTel]));
 }
 
 function parsePrice(text: string | null | undefined): number | null {

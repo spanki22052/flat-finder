@@ -37,6 +37,35 @@ export class YandexRealtyParser extends BaseListingParser {
     return this.heavyParse(url);
   }
 
+  /**
+   * Разбирает уже скачанный HTML (например, из расширения-браузера) без
+   * собственного сетевого запроса.
+   */
+  parseHtml(html: string, sourceUrl: string): ParsedListing {
+    if (looksBlocked(html)) {
+      throw new ParserBlockedError('Yandex: HTML содержит страницу блокировки');
+    }
+
+    const ld = extractJsonLd(html);
+    if (ld) {
+      const mapped = this.mapJsonLd(ld, sourceUrl);
+      if (mapped) return mapped;
+    }
+
+    const inline = extractInlineConfig(html, ['__INITIAL_STATE__', '__NEXT_DATA__']);
+    if (inline) {
+      const mapped = this.mapYandexState(inline, sourceUrl);
+      if (mapped) return mapped;
+    }
+    const next = extractNextData(html);
+    if (next) {
+      const mapped = this.mapYandexState(next, sourceUrl);
+      if (mapped) return mapped;
+    }
+
+    throw new ParserInvalidPageError('Yandex: HTML не содержит данных карточки (title/price/city)');
+  }
+
   private async lightParse(url: string): Promise<ParsedListing | null> {
     const { html } = await lightFetch(url, {
       referer: 'https://realty.yandex.ru/',

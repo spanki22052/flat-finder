@@ -43,6 +43,39 @@ export class CianParser extends BaseListingParser {
     return this.heavyParse(url);
   }
 
+  /**
+   * Разбирает уже скачанный HTML (например, из расширения-браузера) без
+   * собственного сетевого запроса. Использует те же мапперы, что и light-fetch.
+   */
+  parseHtml(html: string, sourceUrl: string): ParsedListing {
+    if (looksBlocked(html)) {
+      throw new ParserBlockedError('CIAN: HTML содержит страницу блокировки');
+    }
+
+    const ld = extractJsonLd(html);
+    if (ld) {
+      const mapped = this.mapJsonLd(ld, html, sourceUrl);
+      if (mapped) return mapped;
+    }
+
+    const fromMeta = this.mapFromMetaTags(html, sourceUrl);
+    if (fromMeta) return fromMeta;
+
+    const cianCfg = extractInlineConfig(html, ['_cianConfig', 'cianConfig', '__INITIAL_STATE__']);
+    if (cianCfg) {
+      const mapped = this.mapCianConfig(cianCfg, sourceUrl);
+      if (mapped) return mapped;
+    }
+
+    const next = extractNextData(html);
+    if (next) {
+      const mapped = this.mapNextData(next, sourceUrl);
+      if (mapped) return mapped;
+    }
+
+    throw new ParserInvalidPageError('CIAN: HTML не содержит данных карточки (title/price/city)');
+  }
+
   // ─── Light-fetch ────────────────────────────────────────────────────────
   private async lightParse(url: string): Promise<ParsedListing | null> {
     const { html } = await lightFetch(url, {

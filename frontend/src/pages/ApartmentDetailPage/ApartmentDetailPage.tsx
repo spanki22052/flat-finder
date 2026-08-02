@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  Spin, Tag, Button, Space, message, Descriptions, Divider,
+  Spin, Tag, Button, message, Descriptions, Divider,
   Card, Popconfirm, Modal, Form, Input, Select, InputNumber, Image, DatePicker, Tooltip,
 } from 'antd';
 import {
   EnvironmentOutlined, HomeOutlined, BorderOutlined, BankOutlined,
-  CalendarOutlined, PlusOutlined, ClockCircleOutlined, CloseOutlined, LinkOutlined,
+  CalendarOutlined, PlusOutlined, ClockCircleOutlined, CloseOutlined, LinkOutlined, PhoneOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -23,8 +23,16 @@ import {
   PlanCta, ScheduledCard, ScheduledAccent, ScheduledDayTile,
   ScheduledDayNumber, ScheduledDayMonth, ScheduledBody, ScheduledEyebrow,
   ScheduledTime, ScheduledRelative, ScheduledTitle, ScheduledActions,
-  GalleryMore, GalleryMoreLink,
+  GalleryMore, GalleryMoreLink, CallRow, CallBtn, CallChip,
+  HeroStatusRow,
 } from './styled';
+
+/** "+79829114120" → "+7 982 911-41-20" — читаемый вид без потери tel:-совместимости. */
+function formatPhone(phone: string): string {
+  const m = /^\+7(\d{3})(\d{3})(\d{2})(\d{2})$/.exec(phone);
+  if (!m) return phone;
+  return `+7 ${m[1]} ${m[2]}-${m[3]}-${m[4]}`;
+}
 
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
@@ -144,8 +152,18 @@ export function ApartmentDetailPage() {
       <BackBtn to="/apartments">← Квартиры</BackBtn>
 
       <HeroCard>
-        <HeroInner>
+        <HeroInner $hasSidebar={!!nextReminder}>
           <HeroMain>
+            <HeroStatusRow>
+              <Tag color={STATUS_COLORS[apt.status]} style={{ border: 'none', fontWeight: 600 }}>
+                {STATUS_LABELS[apt.status]}
+              </Tag>
+              {apt.tags.map((t: string) => (
+                <Tag key={t} style={{ background: theme.colors.primaryFixed, border: 'none', color: theme.colors.onPrimaryFixedVariant }}>
+                  {t}
+                </Tag>
+              ))}
+            </HeroStatusRow>
             <HeroTitleRow>
               <HeroTitle>{apt.title}</HeroTitle>
               {apt.sourceUrl && (
@@ -189,19 +207,32 @@ export function ApartmentDetailPage() {
               {apt.price.toLocaleString('ru-RU')} <span>{apt.currency}</span>
             </PriceDisplay>
 
-            <Space>
-              <Tag color={STATUS_COLORS[apt.status]} style={{ border: 'none', fontWeight: 600 }}>
-                {STATUS_LABELS[apt.status]}
-              </Tag>
-              {apt.tags.map((t: string) => (
-                <Tag key={t} style={{ background: theme.colors.primaryFixed, border: 'none', color: theme.colors.onPrimaryFixedVariant }}>
-                  {t}
-                </Tag>
-              ))}
-            </Space>
+            {(apt.phones?.length || 0) > 0 ? (
+              <CallRow>
+                <CallBtn href={`tel:${apt.phones![0]}`}>
+                  <PhoneOutlined /> {formatPhone(apt.phones![0])}
+                </CallBtn>
+                {apt.phones!.slice(1).map((phone) => (
+                  <CallChip key={phone} href={`tel:${phone}`}>
+                    <PhoneOutlined /> {formatPhone(phone)}
+                  </CallChip>
+                ))}
+                {!nextReminder && (
+                  <PlanCta type="button" onClick={openMeetingModal}>
+                    <PlusOutlined /> Запланировать встречу
+                  </PlanCta>
+                )}
+              </CallRow>
+            ) : (
+              !nextReminder && (
+                <PlanCta type="button" onClick={openMeetingModal}>
+                  <PlusOutlined /> Запланировать встречу
+                </PlanCta>
+              )
+            )}
           </HeroMain>
 
-          {nextReminder ? (
+          {nextReminder && (
             <ScheduledCard>
               <ScheduledAccent aria-hidden />
               <ScheduledDayTile aria-hidden>
@@ -233,17 +264,13 @@ export function ApartmentDetailPage() {
                     okText="Да"
                     cancelText="Нет"
                   >
-                    <Button size="small" danger icon={<CloseOutlined />}>
-                      Отменить
-                    </Button>
-                  </Popconfirm>
-                </ScheduledActions>
-              </ScheduledBody>
-            </ScheduledCard>
-          ) : (
-            <PlanCta type="button" onClick={openMeetingModal}>
-              <PlusOutlined /> Запланировать встречу
-            </PlanCta>
+                  <Button size="small" danger icon={<CloseOutlined />}>
+                    Отменить
+                  </Button>
+                </Popconfirm>
+              </ScheduledActions>
+            </ScheduledBody>
+          </ScheduledCard>
           )}
         </HeroInner>
       </HeroCard>
@@ -287,13 +314,6 @@ export function ApartmentDetailPage() {
                       <img
                         src={src}
                         alt={`Фото ${idx + 1}`}
-                        style={{
-                          width: '100%',
-                          height: 120,
-                          objectFit: 'cover',
-                          borderRadius: 8,
-                          display: 'block',
-                        }}
                         loading="lazy"
                       />
                       {showOverlay && (

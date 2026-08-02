@@ -1,23 +1,31 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Button, Space, Select, Modal, Form, Input, DatePicker, TimePicker,
+  Button, Select, Modal, Form, Input, DatePicker, TimePicker,
   message, Popconfirm, Tag,
 } from 'antd';
 import {
   PlusOutlined, CheckOutlined, DeleteOutlined, BellOutlined,
   ClockCircleOutlined, CalendarOutlined, HomeOutlined, WarningOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ru';
 import { theme } from '../../app/styles/theme';
+import { useAuth } from '../../app/providers/AuthProvider';
 import { remindersApi } from '../../shared/api/endpoints';
 import type { Reminder, CreateReminderPayload, ReminderStatus } from '../../shared/api/types';
 import {
-  PageHeader, PageTitle, FiltersRow, GlassCard,
-  ReminderItem, ReminderIcon, ReminderInfo, ReminderTitle, ReminderMeta,
-  DueBadge, EmptyState, CountBadge,
+  PageHeader, PageHeaderTitleGroup, PageTitle, PageSubtitle, FiltersRow,
+  ResultsBadge, DesktopList, GlassCard,
+  ReminderItem, ReminderIcon, ReminderInfo, ReminderTitle, ReminderMeta, RowActions,
+  DueBadge, EmptyState, EmptyIconWrap, CountBadge,
+  MobileShell, MobileTopBar, MobileBrand, MobileBrandLogo, MobileBrandCaption,
+  MobileTopActions, MobileAvatar, MobileBody, MobileToolbar, MobileHeading,
+  MobileAddBtn, MobileChips, MobileChip, MobileSectionLabel, MobileList,
+  MobileReminderCard, MobileReminderIcon, MobileReminderInfo, MobileReminderTitle,
+  MobileReminderMeta, MobileReminderActions, MobileEmptyState,
 } from './styled';
 
 dayjs.extend(relativeTime);
@@ -32,7 +40,25 @@ const STATUS_LABELS: Record<ReminderStatus, string> = {
   PENDING: 'Ожидает', DONE: 'Выполнено', CANCELED: 'Отменено',
 };
 
+const STATUS_CHIPS: Array<{ value: ReminderStatus | ''; label: string }> = [
+  { value: '', label: 'Все' },
+  { value: 'PENDING', label: 'Ожидает' },
+  { value: 'DONE', label: 'Выполнено' },
+  { value: 'CANCELED', label: 'Отменено' },
+];
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
 export function RemindersPage() {
+  const { user } = useAuth();
   const [data, setData] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<ReminderStatus | ''>('');
@@ -95,110 +121,234 @@ export function RemindersPage() {
 
   return (
     <div>
-      <PageHeader>
-        <PageTitle>Напоминания</PageTitle>
-        <Button
-          type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)} size="large"
-          style={{ background: theme.gradients.accent, border: 'none', height: 44, paddingInline: 24 }}
-        >
-          Новое напоминание
-        </Button>
-      </PageHeader>
+      <DesktopList>
+        <PageHeader>
+          <PageHeaderTitleGroup>
+            <PageTitle>Напоминания</PageTitle>
+            <PageSubtitle>
+              {pending.length > 0 ? `${pending.length} активных, ждут действия` : 'Все напоминания закрыты'}
+            </PageSubtitle>
+          </PageHeaderTitleGroup>
+          <Button
+            type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)} size="large"
+            style={{ background: theme.gradients.accent, border: 'none', height: 44, paddingInline: 24, borderRadius: 12, fontWeight: 600 }}
+          >
+            Новое напоминание
+          </Button>
+        </PageHeader>
 
-      <FiltersRow>
-        <Select
-          placeholder="Статус"
-          allowClear
-          style={{ width: 160 }}
-          value={statusFilter || undefined}
-          onChange={(v) => setStatusFilter(v ?? '')}
-          options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
-        />
-      </FiltersRow>
+        <FiltersRow>
+          <Select
+            placeholder="Статус"
+            allowClear
+            style={{ width: 170 }}
+            suffixIcon={<FilterOutlined style={{ color: theme.colors.text.muted }} />}
+            value={statusFilter || undefined}
+            onChange={(v) => setStatusFilter(v ?? '')}
+            options={Object.entries(STATUS_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+          />
+          <ResultsBadge>
+            <BellOutlined /> {data.length} {data.length === 1 ? 'напоминание' : 'напоминаний'}
+          </ResultsBadge>
+        </FiltersRow>
 
-      {pending.length > 0 && (
-        <GlassCard>
-          <CountBadge>Активные — {pending.length}</CountBadge>
-          {pending.map((r) => {
-            const overdue = new Date(r.dueAt) < new Date();
-            return (
-              <ReminderItem key={r.id} $done={false}>
-                <ReminderIcon $done={false}><ClockCircleOutlined /></ReminderIcon>
+        {pending.length > 0 && (
+          <GlassCard>
+            <CountBadge>Активные — {pending.length}</CountBadge>
+            {pending.map((r) => {
+              const overdue = new Date(r.dueAt) < new Date();
+              return (
+                <ReminderItem key={r.id} $done={false}>
+                  <ReminderIcon $done={false}><ClockCircleOutlined /></ReminderIcon>
+                  <ReminderInfo>
+                    <ReminderTitle $done={false}>{r.title}</ReminderTitle>
+                    <ReminderMeta>
+                      <DueBadge $overdue={overdue}>
+                        {overdue
+                          ? <><WarningOutlined /> Просрочено</>
+                          : <><CalendarOutlined /> {dayjs(r.dueAt).format('D MMM YYYY, HH:mm')}</>}
+                      </DueBadge>
+                      {r.apartment && (
+                        <Link to={`/apartments/${r.apartment.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                          <HomeOutlined /> {r.apartment.title}
+                        </Link>
+                      )}
+                    </ReminderMeta>
+                  </ReminderInfo>
+                  <RowActions>
+                    <Button
+                      size="small"
+                      shape="circle"
+                      icon={<CheckOutlined />}
+                      onClick={() => handleStatus(r, 'DONE')}
+                      style={{
+                        borderColor: theme.colors.status.ACTIVE,
+                        color: '#fff',
+                        background: theme.colors.status.ACTIVE,
+                      }}
+                      aria-label="Выполнено"
+                    />
+                    <Popconfirm title="Отменить?" onConfirm={() => handleStatus(r, 'CANCELED')} okText="Да" cancelText="Нет">
+                      <Button size="small" danger icon={<DeleteOutlined />} aria-label="Отменить" />
+                    </Popconfirm>
+                  </RowActions>
+                </ReminderItem>
+              );
+            })}
+          </GlassCard>
+        )}
+
+        {completed.length > 0 && (
+          <GlassCard style={{ marginTop: 16 }}>
+            <CountBadge>Завершённые — {completed.length}</CountBadge>
+            {completed.map((r) => (
+              <ReminderItem key={r.id} $done={true}>
+                <ReminderIcon $done={true}><CheckOutlined /></ReminderIcon>
                 <ReminderInfo>
-                  <ReminderTitle $done={false}>{r.title}</ReminderTitle>
+                  <ReminderTitle $done={true}>{r.title}</ReminderTitle>
                   <ReminderMeta>
-                    <DueBadge $overdue={overdue}>
-                      {overdue
-                        ? <><WarningOutlined /> Просрочено</>
-                        : <><CalendarOutlined /> {dayjs(r.dueAt).format('D MMM YYYY, HH:mm')}</>}
-                    </DueBadge>
-                    {r.apartment && (
-                      <Link to={`/apartments/${r.apartment.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                        <HomeOutlined /> {r.apartment.title}
-                      </Link>
-                    )}
+                    <Tag color={STATUS_COLORS[r.status]} style={{ border: 'none', fontSize: 11 }}>{STATUS_LABELS[r.status]}</Tag>
+                    <span>{dayjs(r.dueAt).format('D MMM YYYY')}</span>
                   </ReminderMeta>
                 </ReminderInfo>
-                <Space>
-                  <Button
-                    size="small"
-                    shape="circle"
-                    icon={<CheckOutlined />}
-                    onClick={() => handleStatus(r, 'DONE')}
-                    style={{ borderColor: theme.colors.text.primary, color: theme.colors.text.primary }}
-                  />
-                  <Popconfirm title="Отменить?" onConfirm={() => handleStatus(r, 'CANCELED')} okText="Да" cancelText="Нет">
-                    <Button size="small" danger icon={<DeleteOutlined />} />
-                  </Popconfirm>
-                </Space>
+                <Popconfirm title="Удалить?" onConfirm={() => handleDelete(r.id)} okText="Да" cancelText="Нет">
+                  <Button size="small" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
               </ReminderItem>
-            );
-          })}
-        </GlassCard>
-      )}
+            ))}
+          </GlassCard>
+        )}
 
-      {completed.length > 0 && (
-        <GlassCard style={{ marginTop: 16 }}>
-          <CountBadge>Завершённые — {completed.length}</CountBadge>
-          {completed.map((r) => (
-            <ReminderItem key={r.id} $done={true}>
-              <ReminderIcon $done={true}>✓</ReminderIcon>
-              <ReminderInfo>
-                <ReminderTitle $done={true}>{r.title}</ReminderTitle>
-                <ReminderMeta>
-                  <Tag color={STATUS_COLORS[r.status]} style={{ border: 'none', fontSize: 11 }}>{STATUS_LABELS[r.status]}</Tag>
-                  <span>{dayjs(r.dueAt).format('D MMM YYYY')}</span>
-                </ReminderMeta>
-              </ReminderInfo>
-              <Popconfirm title="Удалить?" onConfirm={() => handleDelete(r.id)} okText="Да" cancelText="Нет">
-                <Button size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            </ReminderItem>
-          ))}
-        </GlassCard>
-      )}
+        {!loading && data.length === 0 && (
+          <GlassCard>
+            <EmptyState>
+              <EmptyIconWrap>
+                <BellOutlined style={{ fontSize: 44, color: theme.colors.accent.primary }} />
+              </EmptyIconWrap>
+              Нет напоминаний
+            </EmptyState>
+          </GlassCard>
+        )}
+      </DesktopList>
 
-      {!loading && data.length === 0 && (
-        <GlassCard>
-          <EmptyState>
-            <div
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'radial-gradient(circle, rgba(150, 67, 37, 0.14), rgba(150, 67, 37, 0.03))',
-                marginBottom: 16,
-              }}
-            >
-              <BellOutlined style={{ fontSize: 44, color: theme.colors.accent.primary }} />
+      <MobileShell>
+        <MobileTopBar>
+          <MobileBrand>
+            <MobileBrandLogo><HomeOutlined /></MobileBrandLogo>
+            <div>
+              <div>FlatFinder</div>
+              <MobileBrandCaption>Совместный поиск</MobileBrandCaption>
             </div>
-            Нет напоминаний
-          </EmptyState>
-        </GlassCard>
-      )}
+          </MobileBrand>
+          <MobileTopActions>
+            <MobileAvatar size={38}>{user ? initials(user.name) : 'FF'}</MobileAvatar>
+          </MobileTopActions>
+        </MobileTopBar>
+
+        <MobileBody>
+          <MobileToolbar>
+            <MobileHeading>
+              Напоминания
+              <span>{data.length} {data.length === 1 ? 'напоминание' : 'напоминаний'}</span>
+            </MobileHeading>
+            <MobileAddBtn type="button" onClick={() => setModalOpen(true)}>
+              <PlusOutlined /> Новое
+            </MobileAddBtn>
+          </MobileToolbar>
+
+          <MobileChips>
+            {STATUS_CHIPS.map((chip) => (
+              <MobileChip
+                key={chip.value || 'all'}
+                type="button"
+                $active={statusFilter === chip.value}
+                onClick={() => setStatusFilter(chip.value)}
+              >
+                {chip.label}
+              </MobileChip>
+            ))}
+          </MobileChips>
+
+          {loading ? (
+            <MobileEmptyState>Загружаем напоминания…</MobileEmptyState>
+          ) : data.length === 0 ? (
+            <MobileEmptyState><BellOutlined style={{ fontSize: 32 }} />Нет напоминаний</MobileEmptyState>
+          ) : (
+            <>
+              {pending.length > 0 && (
+                <>
+                  <MobileSectionLabel>Активные — {pending.length}</MobileSectionLabel>
+                  <MobileList>
+                    {pending.map((r) => {
+                      const overdue = new Date(r.dueAt) < new Date();
+                      return (
+                        <MobileReminderCard key={r.id}>
+                          <MobileReminderIcon><ClockCircleOutlined /></MobileReminderIcon>
+                          <MobileReminderInfo>
+                            <MobileReminderTitle>{r.title}</MobileReminderTitle>
+                            <MobileReminderMeta>
+                              <DueBadge $overdue={overdue}>
+                                {overdue
+                                  ? <><WarningOutlined /> Просрочено</>
+                                  : <><CalendarOutlined /> {dayjs(r.dueAt).format('D MMM, HH:mm')}</>}
+                              </DueBadge>
+                              {r.apartment && (
+                                <Link to={`/apartments/${r.apartment.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                                  <HomeOutlined /> {r.apartment.title}
+                                </Link>
+                              )}
+                            </MobileReminderMeta>
+                          </MobileReminderInfo>
+                          <MobileReminderActions>
+                            <Button
+                              size="small"
+                              shape="circle"
+                              icon={<CheckOutlined />}
+                              aria-label="Выполнено"
+                              onClick={() => handleStatus(r, 'DONE')}
+                              style={{
+                                borderColor: theme.colors.status.ACTIVE,
+                                color: '#fff',
+                                background: theme.colors.status.ACTIVE,
+                              }}
+                            />
+                            <Popconfirm title="Отменить?" onConfirm={() => handleStatus(r, 'CANCELED')} okText="Да" cancelText="Нет">
+                              <Button size="small" danger icon={<DeleteOutlined />} aria-label="Отменить" />
+                            </Popconfirm>
+                          </MobileReminderActions>
+                        </MobileReminderCard>
+                      );
+                    })}
+                  </MobileList>
+                </>
+              )}
+
+              {completed.length > 0 && (
+                <>
+                  <MobileSectionLabel>Завершённые — {completed.length}</MobileSectionLabel>
+                  <MobileList>
+                    {completed.map((r) => (
+                      <MobileReminderCard key={r.id} $done>
+                        <MobileReminderIcon $done><CheckOutlined /></MobileReminderIcon>
+                        <MobileReminderInfo>
+                          <MobileReminderTitle $done>{r.title}</MobileReminderTitle>
+                          <MobileReminderMeta>
+                            <Tag color={STATUS_COLORS[r.status]} style={{ border: 'none', fontSize: 11 }}>{STATUS_LABELS[r.status]}</Tag>
+                            <span>{dayjs(r.dueAt).format('D MMM YYYY')}</span>
+                          </MobileReminderMeta>
+                        </MobileReminderInfo>
+                        <Popconfirm title="Удалить?" onConfirm={() => handleDelete(r.id)} okText="Да" cancelText="Нет">
+                          <Button size="small" danger icon={<DeleteOutlined />} aria-label="Удалить" />
+                        </Popconfirm>
+                      </MobileReminderCard>
+                    ))}
+                  </MobileList>
+                </>
+              )}
+            </>
+          )}
+        </MobileBody>
+      </MobileShell>
 
       <Modal
         title="Новое напоминание"

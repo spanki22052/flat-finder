@@ -49,6 +49,12 @@ export class ParserService {
       if (dto.source === 'avito') {
         return new AvitoParser().parseHtml(dto.html, sourceUrl);
       }
+      if (dto.source === 'cian') {
+        return new CianParser().parseHtml(dto.html, sourceUrl);
+      }
+      if (dto.source === 'yandex') {
+        return new YandexRealtyParser().parseHtml(dto.html, sourceUrl);
+      }
       return new DomClickParser().parseHtml(dto.html, sourceUrl, { throwOnFail: true })
         ?? (() => { throw new ParserInvalidPageError('DomClick: HTML не содержит данных карточки'); })();
     } catch (err) {
@@ -75,7 +81,12 @@ export class ParserService {
   }
 
   private defaultSourceUrl(source: HtmlParseSource): string {
-    return source === 'avito' ? 'https://www.avito.ru/' : 'https://domclick.ru/';
+    switch (source) {
+      case 'avito': return 'https://www.avito.ru/';
+      case 'cian': return 'https://www.cian.ru/';
+      case 'yandex': return 'https://realty.yandex.ru/';
+      default: return 'https://domclick.ru/';
+    }
   }
 
   private handleParseError(err: unknown): never {

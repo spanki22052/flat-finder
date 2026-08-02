@@ -24,3 +24,21 @@ export function extractPhones(text: string | null | undefined): string[] {
   }
   return Array.from(found);
 }
+
+/**
+ * Извлекает телефоны из всех <a href="tel:..."> ссылок в HTML.
+ * Нормализует к формату +7XXXXXXXXXX.
+ */
+export function extractPhonesFromTelLinks(html: string): string[] {
+  const found = new Set<string>();
+  const re = /<a[^>]+href=["']tel:([^"']+)["'][^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(html)) !== null) {
+    const raw = match[1].trim();
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length !== 11) continue;
+    const normalized = digits.startsWith('8') ? `+7${digits.slice(1)}` : `+${digits}`;
+    found.add(normalized);
+  }
+  return Array.from(found);
+}

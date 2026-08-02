@@ -70,7 +70,7 @@ export interface ApartmentsResponse {
   meta: ApartmentsMeta;
 }
 
-export type HtmlParseSource = 'avito' | 'domclick';
+export type HtmlParseSource = 'avito' | 'domclick' | 'cian' | 'yandex';
 
 export interface ParsedApartment {
   source: ApartmentSource;

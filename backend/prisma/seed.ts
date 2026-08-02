@@ -1,7 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
+
+function generateInviteCode(): string {
+  return randomBytes(4).toString('hex').toUpperCase();
+}
 
 async function main() {
   const password = await bcrypt.hash('password123', 10);
@@ -30,24 +35,43 @@ async function main() {
     },
   });
 
+  let room = await prisma.room.findFirst({
+    where: { members: { some: { userId: demo.id } } },
+  });
+  if (!room) {
+    room = await prisma.room.create({
+      data: {
+        name: 'Demo Room',
+        inviteCode: generateInviteCode(),
+        members: {
+          create: [
+            { userId: demo.id, role: 'OWNER' },
+            { userId: admin.id, role: 'MEMBER' },
+          ],
+        },
+      },
+    });
+  }
+
   const tag1 = await prisma.apartmentTag.upsert({
-    where: { name: 'центр' },
+    where: { roomId_name: { roomId: room.id, name: 'центр' } },
     update: {},
-    create: { name: 'центр' },
+    create: { name: 'центр', roomId: room.id },
   });
   const tag2 = await prisma.apartmentTag.upsert({
-    where: { name: 'новый дом' },
+    where: { roomId_name: { roomId: room.id, name: 'новый дом' } },
     update: {},
-    create: { name: 'новый дом' },
+    create: { name: 'новый дом', roomId: room.id },
   });
   const tag3 = await prisma.apartmentTag.upsert({
-    where: { name: 'с ремонтом' },
+    where: { roomId_name: { roomId: room.id, name: 'с ремонтом' } },
     update: {},
-    create: { name: 'с ремонтом' },
+    create: { name: 'с ремонтом', roomId: room.id },
   });
 
   const apt1 = await prisma.apartment.create({
     data: {
+      roomId: room.id,
       title: 'Уютная 2-комната в центре',
       source: 'MANUAL',
       price: 85000,
@@ -67,6 +91,7 @@ async function main() {
 
   const apt2 = await prisma.apartment.create({
     data: {
+      roomId: room.id,
       title: 'Студия у парка Горького',
       source: 'LINK',
       sourceUrl: 'https://example.com/flat/1',
@@ -87,6 +112,7 @@ async function main() {
 
   await prisma.apartment.create({
     data: {
+      roomId: room.id,
       title: '3-комната с видом на Неву',
       source: 'MANUAL',
       price: 1200,

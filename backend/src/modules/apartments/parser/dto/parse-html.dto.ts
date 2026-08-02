@@ -1,6 +1,6 @@
 import { IsIn, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
-export const HTML_PARSE_SOURCES = ['avito', 'domclick'] as const;
+export const HTML_PARSE_SOURCES = ['avito', 'domclick', 'cian', 'yandex'] as const;
 export type HtmlParseSource = (typeof HTML_PARSE_SOURCES)[number];
 
 export class ParseHtmlDto {

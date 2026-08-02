@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Avatar, Empty, Spin } from 'antd';
+import { Empty, Spin } from 'antd';
 import {
   BellOutlined,
   CalendarOutlined,
@@ -7,64 +7,42 @@ import {
   PlusOutlined,
   RightOutlined,
   StarFilled,
+  TeamOutlined,
+  ClockCircleOutlined,
+  LinkOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { flatApi } from '@/entities/Flat/utils/api';
 import type { Apartment, ApartmentStatus } from '@/entities/Flat/model/types';
 import { remindersApi } from '@/shared/api/endpoints';
 import type { Reminder } from '@/shared/api/types';
 import {
-  ActivityAvatar,
-  ActivityContent,
-  ActivityFeed,
-  ActivityItem,
-  ActivityText,
-  ActivityTime,
-  AddListingButton,
-  ApartmentCard,
-  ApartmentCardImage,
-  ApartmentCardInfo,
-  ApartmentCardLocation,
-  ApartmentCardPrice,
-  ApartmentCardTitle,
-  ApartmentsRail,
-  AvatarInitials,
   CenterSpin,
-  ConsensusBadge,
-  ConsensusCard,
-  ConsensusContent,
-  ConsensusIcon,
-  ConsensusText,
-  DashboardDesktop,
-  DashboardMobile,
-  DesktopGrid,
-  DesktopPanel,
-  DesktopStat,
-  EmptyPanel,
-  HeaderAvatar,
-  HeaderBrand,
-  HeaderGreeting,
-  HeaderLogo,
-  HeaderNotification,
-  MobileHeader,
-  MobilePage,
-  ProgressBar,
-  ProgressBarFill,
-  ProgressCard,
-  ProgressCopy,
-  ProgressEyebrow,
-  ProgressHeader,
-  ProgressMeta,
-  ProgressTitle,
-  SectionHeader,
-  SectionTitle,
-  SeeAll,
-  StatsGrid,
-  StatCard,
-  StatIcon,
-  StatLabel,
-  StatValue,
+  DesktopOnly,
+  Shell,
+  Hero, HeroRow, HeroIdentity, HeroEyebrow, HeroTitle, HeroLead,
+  HeroActions, HeroActionBtn, HeroMetaRow, HeroMetaPill,
+  DesktopGrid, MainColumn, SideColumn,
+  SectionCard, SectionHeader, SectionTitle, SeeAll,
+  ApartmentsGrid, ApartmentTile, ApartmentTileImage, ApartmentStatusBadge,
+  ApartmentTileBody, ApartmentTileTitle, ApartmentTileLocation, ApartmentTilePrice,
+  RemindersList, ReminderRow, ReminderIconWrap, ReminderRowBody,
+  ReminderRowTitle, ReminderRowMeta, ReminderDueBadge,
+  EmptyBlock,
+  QuickLinksRow, QuickLinkCard, QuickLinkIcon, QuickLinkBody,
+  MobileShell, MobileTopBar, MobileBrand, MobileBrandLogo, MobileBrandCaption,
+  MobileTopActions, MobileBellBtn, MobileAvatar, MobileBody,
+  ProgressCard, ProgressHeader, ProgressEyebrow, ProgressTitle, ProgressMeta,
+  ProgressBar, ProgressBarFill, ProgressCopy,
+  StatsGrid, StatCard, StatIcon, StatValue, StatLabel,
+  ConsensusCard, ConsensusIcon, ConsensusContent, ConsensusText, ConsensusBadge,
+  MobileSectionHeader, MobileSectionTitle, MobileSeeAll,
+  ApartmentsRail, ApartmentCard, ApartmentCardImage, ApartmentCardInfo,
+  ApartmentCardTitle, ApartmentCardLocation, ApartmentCardPrice,
+  ActivityFeed, ActivityItem, ActivityAvatar, AvatarInitials, ActivityContent,
+  ActivityText, ActivityTime, EmptyPanel, AddListingButton,
 } from './styled';
 
 const STATUS_LABELS: Record<ApartmentStatus, string> = {
@@ -86,6 +64,17 @@ function initials(name: string) {
     .map((part) => part[0])
     .join('')
     .toUpperCase();
+}
+
+function greetingForHour(hour: number) {
+  if (hour < 5) return 'Доброй ночи';
+  if (hour < 12) return 'Доброе утро';
+  if (hour < 18) return 'Добрый день';
+  return 'Добрый вечер';
+}
+
+function firstName(name: string) {
+  return name.split(' ')[0] || name;
 }
 
 function formatPrice(apartment: Apartment) {
@@ -147,6 +136,8 @@ function ReminderActivity({ reminder, index }: { reminder: Reminder; index: numb
   );
 }
 
+// ─── Mobile ──────────────────────────────────────────────────────────────────
+
 function MobileDashboard({ apartments, reminders, total }: {
   apartments: Apartment[];
   reminders: Reminder[];
@@ -161,24 +152,24 @@ function MobileDashboard({ apartments, reminders, total }: {
   const priorityApartments = apartments.filter((apartment) => apartment.status !== 'REJECTED').slice(0, 5);
 
   return (
-    <DashboardMobile>
-      <MobileHeader>
-        <HeaderBrand>
-          <HeaderLogo><HomeOutlined /></HeaderLogo>
+    <MobileShell>
+      <MobileTopBar>
+        <MobileBrand>
+          <MobileBrandLogo><HomeOutlined /></MobileBrandLogo>
           <div>
             <div>FlatFinder</div>
-            <HeaderGreeting>Совместный поиск</HeaderGreeting>
+            <MobileBrandCaption>Совместный поиск</MobileBrandCaption>
           </div>
-        </HeaderBrand>
-        <div>
-          <HeaderNotification type="button" aria-label="Уведомления">
+        </MobileBrand>
+        <MobileTopActions>
+          <MobileBellBtn type="button" aria-label="Уведомления">
             <BellOutlined />
-          </HeaderNotification>
-          <HeaderAvatar size={38}>{user ? initials(user.name) : <AvatarInitials>FF</AvatarInitials>}</HeaderAvatar>
-        </div>
-      </MobileHeader>
+          </MobileBellBtn>
+          <MobileAvatar size={38}>{user ? initials(user.name) : <AvatarInitials>FF</AvatarInitials>}</MobileAvatar>
+        </MobileTopActions>
+      </MobileTopBar>
 
-      <MobilePage>
+      <MobileBody>
         <ProgressCard>
           <ProgressHeader>
             <div>
@@ -217,20 +208,20 @@ function MobileDashboard({ apartments, reminders, total }: {
           <RightOutlined aria-hidden />
         </ConsensusCard>
 
-        <SectionHeader>
-          <SectionTitle>Приоритетные варианты</SectionTitle>
-          <SeeAll to="/apartments">Все</SeeAll>
-        </SectionHeader>
+        <MobileSectionHeader>
+          <MobileSectionTitle>Приоритетные варианты</MobileSectionTitle>
+          <MobileSeeAll to="/apartments">Все</MobileSeeAll>
+        </MobileSectionHeader>
         {priorityApartments.length ? (
           <ApartmentsRail>{priorityApartments.map((apartment) => <ApartmentRailCard key={apartment.id} apartment={apartment} />)}</ApartmentsRail>
         ) : (
           <EmptyPanel><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Пока нет квартир" /></EmptyPanel>
         )}
 
-        <SectionHeader>
-          <SectionTitle>Ближайшие действия</SectionTitle>
-          <SeeAll to="/reminders">Все</SeeAll>
-        </SectionHeader>
+        <MobileSectionHeader>
+          <MobileSectionTitle>Ближайшие действия</MobileSectionTitle>
+          <MobileSeeAll to="/reminders">Все</MobileSeeAll>
+        </MobileSectionHeader>
         {reminders.length ? (
           <ActivityFeed>{reminders.slice(0, 4).map((reminder, index) => <ReminderActivity key={reminder.id} reminder={reminder} index={index} />)}</ActivityFeed>
         ) : (
@@ -240,29 +231,186 @@ function MobileDashboard({ apartments, reminders, total }: {
         <AddListingButton type="button" onClick={() => navigate('/apartments')}>
           <PlusOutlined /> Добавить квартиру
         </AddListingButton>
-      </MobilePage>
-    </DashboardMobile>
+      </MobileBody>
+    </MobileShell>
   );
 }
+
+// ─── Desktop ─────────────────────────────────────────────────────────────────
 
 function DesktopDashboard({ apartments, reminders, total }: {
   apartments: Apartment[];
   reminders: Reminder[];
   total: number;
 }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const activeCount = apartments.filter((apartment) =>
+    ['ACTIVE', 'CALLBACK', 'VIEWING'].includes(apartment.status),
+  ).length;
+  const callbackCount = apartments.filter((apartment) => apartment.status === 'CALLBACK').length;
+  const pendingReminders = reminders.filter((r) => r.status === 'PENDING');
+  const greeting = greetingForHour(new Date().getHours());
+
   return (
-    <DashboardDesktop>
-      <h1>Дашборд</h1>
-      <p>Обзор текущей подборки квартир</p>
-      <DesktopGrid>
-        <DesktopStat><HomeOutlined /><strong>{total}</strong><span>Всего квартир</span></DesktopStat>
-        <DesktopStat><CalendarOutlined /><strong>{reminders.length}</strong><span>Напоминаний</span></DesktopStat>
-        <DesktopPanel>
-          <SectionHeader><SectionTitle>Последние квартиры</SectionTitle><SeeAll to="/apartments">Все</SeeAll></SectionHeader>
-          {apartments.length ? <ApartmentsRail>{apartments.map((apartment) => <ApartmentRailCard key={apartment.id} apartment={apartment} />)}</ApartmentsRail> : <Empty description="Нет квартир" />}
-        </DesktopPanel>
-      </DesktopGrid>
-    </DashboardDesktop>
+    <DesktopOnly>
+      <Shell initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+        <Hero>
+          <HeroRow>
+            <HeroIdentity>
+              <HeroEyebrow>Дашборд</HeroEyebrow>
+              <HeroTitle>{greeting}{user ? `, ${firstName(user.name)}` : ''}</HeroTitle>
+              <HeroLead>
+                {total > 0
+                  ? `${total} ${total === 1 ? 'квартира' : 'квартир'} в подборке, ${pendingReminders.length ? `${pendingReminders.length} напоминаний ждёт действия` : 'все напоминания закрыты'}.`
+                  : 'Подборка пока пуста — добавьте первую квартиру, чтобы начать поиск.'}
+              </HeroLead>
+            </HeroIdentity>
+            <HeroActions>
+              <HeroActionBtn $variant="ghost" onClick={() => navigate('/team')}>
+                <TeamOutlined /> Команда
+              </HeroActionBtn>
+              <HeroActionBtn onClick={() => navigate('/apartments')}>
+                <PlusOutlined /> Добавить квартиру
+              </HeroActionBtn>
+            </HeroActions>
+          </HeroRow>
+
+          <HeroMetaRow>
+            <HeroMetaPill to="/apartments">
+              <span className="value">{total}</span>
+              <span className="label">всего квартир</span>
+            </HeroMetaPill>
+            <HeroMetaPill to="/apartments?status=ACTIVE">
+              <span className="value">{activeCount}</span>
+              <span className="label">в работе</span>
+            </HeroMetaPill>
+            <HeroMetaPill to="/apartments?status=CALLBACK">
+              <span className="value">{callbackCount}</span>
+              <span className="label">перезвонов</span>
+            </HeroMetaPill>
+            <HeroMetaPill to="/reminders">
+              <span className="value">{pendingReminders.length}</span>
+              <span className="label">напоминаний</span>
+            </HeroMetaPill>
+          </HeroMetaRow>
+        </Hero>
+
+        <DesktopGrid>
+          <MainColumn>
+            <SectionCard>
+              <SectionHeader>
+                <SectionTitle>Последние квартиры</SectionTitle>
+                <SeeAll to="/apartments">Все квартиры <RightOutlined /></SeeAll>
+              </SectionHeader>
+              {apartments.length ? (
+                <ApartmentsGrid>
+                  {apartments.map((apartment) => {
+                    const location = [apartment.city, apartment.district].filter(Boolean).join(', ');
+                    const photo = apartment.photos?.[0];
+                    return (
+                      <ApartmentTile key={apartment.id} to={`/apartments/${apartment.id}`}>
+                        <ApartmentTileImage $src={photo}>
+                          {!photo && <HomeOutlined aria-hidden />}
+                          <ApartmentStatusBadge>{STATUS_LABELS[apartment.status]}</ApartmentStatusBadge>
+                        </ApartmentTileImage>
+                        <ApartmentTileBody>
+                          <ApartmentTileTitle>{apartment.title}</ApartmentTileTitle>
+                          <ApartmentTileLocation>{location || 'Адрес не указан'}</ApartmentTileLocation>
+                          <ApartmentTilePrice>{formatPrice(apartment)}</ApartmentTilePrice>
+                        </ApartmentTileBody>
+                      </ApartmentTile>
+                    );
+                  })}
+                </ApartmentsGrid>
+              ) : (
+                <EmptyBlock>
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Пока нет квартир в подборке" />
+                </EmptyBlock>
+              )}
+            </SectionCard>
+
+            <QuickLinksRow>
+              <QuickLinkCard to="/apartments">
+                <QuickLinkIcon $tone="coral"><HomeOutlined /></QuickLinkIcon>
+                <QuickLinkBody>
+                  <span className="title">Квартиры</span>
+                  <span className="caption">Список и импорт по ссылке</span>
+                </QuickLinkBody>
+              </QuickLinkCard>
+              <QuickLinkCard to="/reminders">
+                <QuickLinkIcon $tone="amber"><BellOutlined /></QuickLinkIcon>
+                <QuickLinkBody>
+                  <span className="title">Напоминания</span>
+                  <span className="caption">Звонки и просмотры</span>
+                </QuickLinkBody>
+              </QuickLinkCard>
+              <QuickLinkCard to="/team">
+                <QuickLinkIcon $tone="sage"><TeamOutlined /></QuickLinkIcon>
+                <QuickLinkBody>
+                  <span className="title">Команда</span>
+                  <span className="caption">Кто чем занимается</span>
+                </QuickLinkBody>
+              </QuickLinkCard>
+            </QuickLinksRow>
+          </MainColumn>
+
+          <SideColumn>
+            <SectionCard>
+              <SectionHeader>
+                <SectionTitle>Ближайшие действия</SectionTitle>
+                <SeeAll to="/reminders">Все</SeeAll>
+              </SectionHeader>
+              {pendingReminders.length ? (
+                <RemindersList>
+                  {pendingReminders.slice(0, 6).map((reminder) => {
+                    const overdue = new Date(reminder.dueAt) < new Date();
+                    return (
+                      <ReminderRow
+                        key={reminder.id}
+                        to={reminder.apartment ? `/apartments/${reminder.apartment.id}` : '/reminders'}
+                      >
+                        <ReminderIconWrap $overdue={overdue}>
+                          {overdue ? <WarningOutlined /> : <ClockCircleOutlined />}
+                        </ReminderIconWrap>
+                        <ReminderRowBody>
+                          <ReminderRowTitle>{reminder.title}</ReminderRowTitle>
+                          <ReminderRowMeta>
+                            <ReminderDueBadge $overdue={overdue}>
+                              {overdue ? 'Просрочено' : formatDueAt(reminder.dueAt)}
+                            </ReminderDueBadge>
+                            {reminder.apartment && (
+                              <span>· {reminder.apartment.title}</span>
+                            )}
+                          </ReminderRowMeta>
+                        </ReminderRowBody>
+                      </ReminderRow>
+                    );
+                  })}
+                </RemindersList>
+              ) : (
+                <EmptyBlock>
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет активных напоминаний" />
+                </EmptyBlock>
+              )}
+            </SectionCard>
+
+            <SectionCard>
+              <SectionHeader>
+                <SectionTitle>Импорт по ссылке</SectionTitle>
+              </SectionHeader>
+              <QuickLinkCard to="/apartments" style={{ padding: '14px 16px' }}>
+                <QuickLinkIcon $tone="coral"><LinkOutlined /></QuickLinkIcon>
+                <QuickLinkBody>
+                  <span className="title">Импортировать объявление</span>
+                  <span className="caption">Вставьте ссылку на Avito, Cian, DomClick или Яндекс</span>
+                </QuickLinkBody>
+              </QuickLinkCard>
+            </SectionCard>
+          </SideColumn>
+        </DesktopGrid>
+      </Shell>
+    </DesktopOnly>
   );
 }
 

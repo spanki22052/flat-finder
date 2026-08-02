@@ -28,12 +28,13 @@ const REMINDER_SELECT = {
 export class ApartmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(dto: ListApartmentDto, userId: string) {
+  async list(dto: ListApartmentDto, roomId: string) {
     const page = dto.page ?? 1;
     const pageSize = dto.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
     const where: Prisma.ApartmentWhereInput = {
+      roomId,
       ...(dto.status && { status: dto.status }),
       ...(dto.city && { city: { contains: dto.city, mode: 'insensitive' } }),
       ...(dto.assigneeId && { assigneeId: dto.assigneeId }),
@@ -67,20 +68,21 @@ export class ApartmentsService {
     };
   }
 
-  async findOne(id: string) {
-    const apartment = await this.prisma.apartment.findUnique({
-      where: { id },
+  async findOne(id: string, roomId: string) {
+    const apartment = await this.prisma.apartment.findFirst({
+      where: { id, roomId },
       select: APARTMENT_SELECT,
     });
     if (!apartment) throw new NotFoundException('Apartment not found');
     return { ...apartment, tags: apartment.tags.map((t) => t.name) };
   }
 
-  async getNextReminder(id: string) {
-    await this.findOne(id);
+  async getNextReminder(id: string, roomId: string) {
+    await this.findOne(id, roomId);
     return this.prisma.reminder.findFirst({
       where: {
         apartmentId: id,
+        roomId,
         status: 'PENDING',
         dueAt: { gte: new Date() },
       },
@@ -89,14 +91,14 @@ export class ApartmentsService {
     });
   }
 
-  async create(dto: CreateApartmentDto, userId: string) {
+  async create(dto: CreateApartmentDto, userId: string, roomId: string) {
     const { tags, ...data } = dto;
 
     const tagConnect = tags && tags.length > 0
       ? {
           connectOrCreate: tags.map((name) => ({
-            where: { name },
-            create: { name },
+            where: { roomId_name: { roomId, name } },
+            create: { name, roomId },
           })),
         }
       : undefined;
@@ -104,6 +106,7 @@ export class ApartmentsService {
     const apartment = await this.prisma.apartment.create({
       data: {
         ...data,
+        roomId,
         assigneeId: data.assigneeId ?? userId,
         tags: tagConnect,
       },
@@ -113,8 +116,8 @@ export class ApartmentsService {
     return { ...apartment, tags: apartment.tags.map((t) => t.name) };
   }
 
-  async update(id: string, dto: UpdateApartmentDto) {
-    await this.findOne(id);
+  async update(id: string, dto: UpdateApartmentDto, roomId: string) {
+    await this.findOne(id, roomId);
     const apartment = await this.prisma.apartment.update({
       where: { id },
       data: dto as Parameters<typeof this.prisma.apartment.update>[0]['data'],
@@ -123,16 +126,16 @@ export class ApartmentsService {
     return { ...apartment, tags: apartment.tags.map((t) => t.name) };
   }
 
-  async updateTags(id: string, dto: UpdateTagsDto) {
-    await this.findOne(id);
+  async updateTags(id: string, dto: UpdateTagsDto, roomId: string) {
+    await this.findOne(id, roomId);
     const apartment = await this.prisma.apartment.update({
       where: { id },
       data: {
         tags: {
           set: [],
           connectOrCreate: dto.tags.map((name) => ({
-            where: { name },
-            create: { name },
+            where: { roomId_name: { roomId, name } },
+            create: { name, roomId },
           })),
         },
       },
@@ -141,8 +144,8 @@ export class ApartmentsService {
     return { ...apartment, tags: apartment.tags.map((t) => t.name) };
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, roomId: string) {
+    await this.findOne(id, roomId);
     await this.prisma.apartment.delete({ where: { id } });
     return { deleted: true };
   }

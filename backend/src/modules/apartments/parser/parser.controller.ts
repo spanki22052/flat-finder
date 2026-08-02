@@ -3,9 +3,10 @@ import { ParserService } from './parser.service.js';
 import { ParseLinkDto } from './dto/parse-link.dto.js';
 import { ParseHtmlDto } from './dto/parse-html.dto.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
+import { RoomGuard } from '../../rooms/guards/room.guard.js';
 
 @Controller('apartments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RoomGuard)
 export class ParserController {
   constructor(private readonly parserService: ParserService) {}
 

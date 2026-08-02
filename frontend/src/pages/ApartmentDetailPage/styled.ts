@@ -3,55 +3,86 @@ import { Link } from 'react-router-dom';
 import { theme } from '../../app/styles/theme';
 
 export const PageWrap = styled.div({
-  maxWidth: 900,
+  maxWidth: 1180,
   margin: '0 auto',
+  paddingBottom: 48,
+  '@media (max-width: 720px)': { paddingBottom: 28 },
 });
 
 export const HeroCard = styled.div({
-  background: theme.colors.bg.card,
-  backdropFilter: 'blur(20px)',
-  border: `1px solid ${theme.colors.bg.glassBorder}`,
+  background: 'linear-gradient(145deg, #fffdfb 0%, #fff3ed 100%)',
+  border: `1px solid ${theme.colors.outlineVariant}`,
   borderRadius: theme.radius.xl,
-  padding: 32,
-  marginBottom: 20,
+  padding: 40,
+  marginBottom: 24,
   position: 'relative',
   overflow: 'hidden',
+  boxShadow: theme.shadows.card,
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    width: 320,
+    height: 320,
+    borderRadius: '50%',
+    right: -140,
+    top: -170,
+    background: 'rgba(255, 181, 156, 0.22)',
+    filter: 'blur(4px)',
+  },
+  '@media (max-width: 720px)': { padding: 24 },
 });
 
-export const HeroInner = styled.div({
+export const HeroInner = styled.div<{ $hasSidebar?: boolean }>((props) => ({
   position: 'relative',
   zIndex: 1,
   display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) minmax(240px, 320px)',
-  gap: 24,
+  gridTemplateColumns: props.$hasSidebar
+    ? 'minmax(0, 1fr) minmax(240px, 320px)'
+    : 'minmax(0, 1fr)',
+  gap: props.$hasSidebar ? 24 : 0,
   alignItems: 'flex-start',
   '@media (max-width: 720px)': {
     gridTemplateColumns: '1fr',
+    gap: 16,
   },
-});
+}));
 
 export const HeroMain = styled.div({
   minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
 });
 
 export const HeroTitle = styled.h1({
   minWidth: 0,
   overflowWrap: 'anywhere',
-  fontSize: 24,
-  fontWeight: 700,
-  color: theme.colors.text.inverse,
-  '@media (max-width: 640px)': { fontSize: 20 },
+  fontSize: 'clamp(28px, 4vw, 48px)',
+  lineHeight: 1.06,
+  fontWeight: 800,
+  letterSpacing: '-0.045em',
+  color: theme.colors.text.primary,
+  textWrap: 'pretty',
+  '@media (max-width: 640px)': { fontSize: 30 },
 });
 
 export const HeroMeta = styled.div({
   display: 'flex',
-  gap: 16,
+  gap: 8,
   minWidth: 0,
   flexWrap: 'wrap',
   alignItems: 'center',
-  fontSize: 14,
+  fontSize: 13,
   color: theme.colors.text.secondary,
-  marginBottom: 20,
+  marginBottom: 22,
+  '& span': {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '7px 10px',
+    borderRadius: theme.radius.pill,
+    background: 'rgba(255, 255, 255, 0.72)',
+    border: `1px solid ${theme.colors.outlineVariant}`,
+  },
 });
 
 export const MeetingBlock = styled.div({
@@ -104,13 +135,80 @@ export const MeetingActions = styled.div({
 });
 
 export const PriceDisplay = styled.div({
-  fontSize: 32,
+  fontSize: 'clamp(34px, 5vw, 56px)',
   fontWeight: 800,
   fontFamily: theme.fonts.mono,
-  color: theme.colors.text.inverse,
+  color: theme.colors.text.primary,
   lineHeight: 1,
-  marginBottom: 16,
-  span: { fontSize: 16, fontWeight: 500, color: theme.colors.text.secondary },
+  letterSpacing: '-0.06em',
+  marginBottom: 18,
+  span: { fontSize: 17, fontWeight: 500, letterSpacing: '-0.02em', color: theme.colors.text.muted },
+});
+
+// ─── Call CTA ────────────────────────────────────────────────────────────────
+// Sits right under the price, where Avito/Cian-style listings put it — the
+// single most likely next action on this page. Sage green ties it to the
+// "live / act now" meaning already used by the ACTIVE status tag and the
+// scheduled-meeting accent, distinct from the terracotta brand gradient.
+
+export const CallRow = styled.div({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+  flexWrap: 'wrap',
+  marginBottom: 10,
+});
+
+export const CallBtn = styled.a({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  minHeight: 46,
+  padding: '0 18px',
+  background: theme.colors.primary,
+  border: `1px solid ${theme.colors.primary}`,
+  borderRadius: theme.radius.lg,
+  color: '#fff',
+  fontFamily: theme.fonts.sans,
+  fontSize: 13,
+  fontWeight: 800,
+  textDecoration: 'none',
+  transition: theme.transition,
+  boxShadow: theme.shadows.primary,
+  '&:hover': { color: '#fff', background: theme.colors.primaryHover, transform: 'translateY(-1px)' },
+  '&:active': { transform: 'translateY(0)' },
+  '&:focus-visible': {
+    outline: `2px solid ${theme.colors.accent.primary}`,
+    outlineOffset: 3,
+  },
+});
+
+export const CallChip = styled.a({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  minHeight: 46,
+  padding: '0 14px',
+  borderRadius: theme.radius.lg,
+  background: theme.colors.bg.surfaceLow,
+  border: `1px solid ${theme.colors.outlineVariant}`,
+  color: theme.colors.text.primary,
+  fontFamily: theme.fonts.mono,
+  fontSize: 13,
+  fontWeight: 600,
+  textDecoration: 'none',
+  transition: theme.transition,
+  '&:hover': {
+    color: theme.colors.primary,
+    borderColor: theme.colors.primaryFixedDim,
+    background: theme.colors.primaryFixed,
+  },
+  '&:focus-visible': {
+    outline: `2px solid ${theme.colors.accent.primary}`,
+    outlineOffset: 3,
+  },
 });
 
 export const TagPills = styled.div({
@@ -121,49 +219,65 @@ export const TagPills = styled.div({
 
 export const SectionCard = styled.div({
   background: theme.colors.bg.card,
-  backdropFilter: 'blur(16px)',
-  border: `1px solid ${theme.colors.bg.glassBorder}`,
+  border: `1px solid ${theme.colors.outlineVariant}`,
   borderRadius: theme.radius.xl,
-  padding: 24,
-  marginBottom: 20,
+  padding: 28,
+  marginBottom: 24,
+  boxShadow: '0 3px 18px rgba(65, 38, 27, 0.045)',
+  '@media (max-width: 640px)': { padding: 20, borderRadius: theme.radius.lg },
 });
 
 export const SectionTitle = styled.h2({
-  fontSize: 15,
-  fontWeight: 700,
-  color: theme.colors.text.inverse,
-  marginBottom: 16,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  fontSize: 12,
+  fontWeight: 800,
+  color: theme.colors.text.muted,
+  marginBottom: 18,
   textTransform: 'uppercase',
-  letterSpacing: '0.05em',
+  letterSpacing: '0.14em',
+  '&::before': {
+    content: '""',
+    width: 24,
+    height: 3,
+    borderRadius: 99,
+    background: theme.colors.primary,
+  },
 });
 
 export const BackBtn = styled(Link)({
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 6,
-  fontSize: 14,
-  color: theme.colors.text.secondary,
+  gap: 8,
+  fontSize: 13,
+  fontWeight: 700,
+  color: theme.colors.text.muted,
   transition: theme.transition,
-  marginBottom: 16,
-  '&:hover': { color: theme.colors.accent.primary },
+  marginBottom: 18,
+  padding: '8px 12px 8px 0',
+  '&:hover': { color: theme.colors.primary, transform: 'translateX(-2px)' },
+  '&:focus-visible': { outline: `2px solid ${theme.colors.primary}`, outlineOffset: 3 },
 });
 
 export const GalleryGrid = styled.div({
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-  '@media (max-width: 640px)': {
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+  gridAutoRows: 150,
+  '@media (max-width: 760px)': {
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gridAutoRows: 130,
   },
-  gap: 8,
+  gap: 10,
   marginBottom: 8,
 });
 
 export const GalleryImage = styled.div({
   position: 'relative',
   width: '100%',
-  height: 120,
+  height: '100%',
   borderRadius: theme.radius.md,
-  border: `1px solid ${theme.colors.bg.glassBorder}`,
+  border: `1px solid ${theme.colors.outlineVariant}`,
   cursor: 'pointer',
   overflow: 'hidden',
   transition: theme.transition,
@@ -172,13 +286,18 @@ export const GalleryImage = styled.div({
     height: '100%',
     objectFit: 'cover',
     display: 'block',
-    transition: theme.transition,
+    transition: 'transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1)',
   },
-  '&:hover img': { transform: 'scale(1.04)' },
-  '&:hover': { borderColor: theme.colors.accent.primary },
+  '&:hover img': { transform: 'scale(1.06)' },
+  '&:hover': { borderColor: theme.colors.primaryHover, boxShadow: theme.shadows.soft },
   '&:focus-visible': {
     outline: `2px solid ${theme.colors.accent.primary}`,
     outlineOffset: 2,
+  },
+  '&:first-child': {
+    gridColumn: 'span 2',
+    gridRow: 'span 2',
+    '@media (max-width: 760px)': { gridColumn: 'span 2', gridRow: 'span 1' },
   },
 });
 
@@ -258,6 +377,13 @@ export const ExpandBtn = styled.button({
   '&:hover': { color: theme.colors.accent.secondary },
 });
 
+export const HeroStatusRow = styled.div({
+  display: 'flex',
+  gap: 6,
+  flexWrap: 'wrap',
+  marginBottom: 4,
+});
+
 export const HeroTitleRow = styled.div({
   display: 'flex',
   alignItems: 'center',
@@ -292,14 +418,16 @@ export const SourceLinkIcon = styled.button({
 // Sage accent on the day tile; no gradient, no glow.
 
 export const PlanCta = styled.button({
-  width: '100%',
-  height: 48,
-  borderRadius: 14,
+  width: 'auto',
+  minWidth: 200,
+  height: 44,
+  padding: '0 18px',
+  borderRadius: theme.radius.lg,
   border: 0,
   background: theme.gradients.accent,
   color: '#fff',
   fontFamily: theme.fonts.sans,
-  fontSize: 14,
+  fontSize: 13,
   fontWeight: 700,
   letterSpacing: '0.01em',
   display: 'inline-flex',

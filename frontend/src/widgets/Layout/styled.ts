@@ -24,11 +24,27 @@ export const TopBar = styled.header({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '16px 40px !important',
+  gap: 16,
+  padding: '16px 32px',
   minHeight: 80,
   background: `${theme.colors.bg.surface}cc !important`,
   backdropFilter: 'blur(12px)',
   borderBottom: `2px solid ${theme.colors.secondaryContainer}`,
+  '@media (max-width: 1100px)': {
+    padding: '14px 20px',
+    minHeight: 72,
+  },
+  '@media (max-width: 720px)': {
+    padding: '12px 16px',
+    gap: 8,
+  },
+});
+
+export const TopBarLead = styled.div({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  minWidth: 0,
 });
 
 export const TopBarTitle = styled.h2({
@@ -38,12 +54,19 @@ export const TopBarTitle = styled.h2({
   letterSpacing: '-0.01em',
   color: theme.colors.primary,
   margin: 0,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  minWidth: 0,
+  '@media (max-width: 1100px)': { fontSize: 20 },
+  '@media (max-width: 720px)': { fontSize: 18 },
 });
 
 export const TopBarActions = styled.div({
   display: 'flex',
   alignItems: 'center',
   gap: 8,
+  flexShrink: 0,
 });
 
 export const TopBarSearch = styled.div({
@@ -72,7 +95,7 @@ export const TopBarSearch = styled.div({
     borderColor: theme.colors.primary,
     boxShadow: '0 0 0 3px rgba(150, 67, 37, 0.12)',
   },
-  '@media (max-width: 900px)': { display: 'none' },
+  '@media (max-width: 1180px)': { display: 'none' },
 });
 
 export const TopBarIconBtn = styled.button({
@@ -152,7 +175,7 @@ export const RoomSwitcher = styled.button({
     '.room-switcher-swap': { color: theme.colors.primary, transform: 'translateX(2px)' },
   },
   '&:active': { transform: 'scale(0.98)' },
-  '@media (max-width: 900px)': {
+  '@media (max-width: 1180px)': {
     maxWidth: 44,
     padding: '0 12px',
     '.room-switcher-name, .room-switcher-swap': { display: 'none' },

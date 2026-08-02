@@ -1,22 +1,53 @@
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
 import { theme } from '../../app/styles/theme';
+
+// Shared ink + sage accent from the teammate view, mirrored in subtle
+// accents on the self view for cross-page consistency.
+const INK = '#1e1b18';
+const SAGE = '#5e7a55';
+
+const BP = {
+  sm: '@media (max-width: 640px)',
+  md: '@media (max-width: 768px)',
+  lg: '@media (max-width: 1024px)',
+};
 
 export const PageHeader = styled.div({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-end',
   justifyContent: 'space-between',
-  marginBottom: 28,
+  marginBottom: 24,
   flexWrap: 'wrap',
   gap: 16,
 });
 
 export const PageTitle = styled.h1({
   fontFamily: theme.fonts.sans,
-  fontSize: 32,
-  fontWeight: 700,
-  letterSpacing: '-0.01em',
-  color: theme.colors.primary,
+  fontSize: 30,
+  fontWeight: 800,
+  letterSpacing: '-0.02em',
+  color: theme.colors.text.primary,
   margin: 0,
+  [BP.md]: { fontSize: 26 },
+  [BP.sm]: { fontSize: 22 },
+});
+
+export const PageEyebrow = styled.div({
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase',
+  color: theme.colors.text.muted,
+  marginBottom: 6,
+});
+
+export const PageLead = styled.div({
+  marginTop: 4,
+  fontSize: 13,
+  fontWeight: 500,
+  color: theme.colors.text.secondary,
+  maxWidth: 560,
 });
 
 export const Actions = styled.div({
@@ -39,78 +70,303 @@ export const Card = styled.div({
   background: theme.colors.bg.card,
   border: `1px solid ${theme.colors.outlineVariant}`,
   borderRadius: theme.radius.xl,
-  padding: '36px 32px',
+  padding: '32px 32px',
   boxShadow: theme.shadows.card,
   color: theme.colors.text.primary,
+  [BP.sm]: { padding: '22px 18px' },
 });
 
-export const TopBlock = styled.div({
+// ─── Self view — new hero (warm amber, mirror of TeamPage direction) ────────
+
+export const SelfShell = styled(motion.div)({
   display: 'flex',
-  alignItems: 'center',
-  gap: 24,
-  minWidth: 0,
-  paddingBottom: 28,
-  marginBottom: 28,
-  borderBottom: `1px solid ${theme.colors.outlineVariant}`,
-  '@media (max-width: 640px)': {
-    alignItems: 'flex-start',
-    gap: 14,
+  flexDirection: 'column',
+  gap: 20,
+  '@media (max-width: 640px)': { display: 'none' },
+});
+
+export const SelfHero = styled.section({
+  position: 'relative',
+  overflow: 'hidden',
+  background: 'linear-gradient(140deg, #1e1b18 0%, #3b2a23 55%, #7a2f12 100%)',
+  color: theme.colors.text.onPrimary,
+  borderRadius: theme.radius.xl,
+  padding: '40px 40px 32px',
+  boxShadow: '0 24px 60px rgba(30, 27, 24, 0.32)',
+  [BP.lg]: { padding: '34px 30px 28px', borderRadius: theme.radius.lg },
+  [BP.md]: { padding: '24px 22px 22px' },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    background:
+      'radial-gradient(circle at 88% -10%, rgba(255, 187, 115, 0.28), transparent 55%),' +
+      'radial-gradient(circle at 8% 110%, rgba(248, 187, 115, 0.12), transparent 60%)',
+    pointerEvents: 'none',
   },
 });
 
-export const AvatarWrap = styled.div({
-  flexShrink: 0,
+export const SelfHeroRow = styled.div({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  flexWrap: 'wrap',
+  gap: 16,
+  minWidth: 0,
 });
 
-export const Name = styled.h2({
+export const SelfHeroLeft = styled.div({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 22,
+  minWidth: 0,
+  [BP.lg]: { gap: 16 },
+});
+
+export const SelfAvatarTile = styled.div<{ $tone?: number }>((props) => {
+  const tones = [
+    { from: '#b55b3b', to: '#7a2f12' },
+    { from: '#9b6a2b', to: '#5c3a14' },
+    { from: '#4f7a52', to: '#2c4630' },
+    { from: '#3d6b8a', to: '#1f3f55' },
+  ];
+  const t = tones[props.$tone ?? 0];
+  return {
+    width: 84,
+    height: 84,
+    borderRadius: '50%',
+    background: `linear-gradient(135deg, ${t.from}, ${t.to})`,
+    color: '#fff8f5',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: theme.fonts.sans,
+    fontSize: 30,
+    fontWeight: 800,
+    letterSpacing: '-0.02em',
+    boxShadow: '0 12px 32px rgba(30, 27, 24, 0.4)',
+    border: '2px solid rgba(255, 248, 245, 0.25)',
+    flexShrink: 0,
+    [BP.md]: { width: 72, height: 72, fontSize: 26 },
+  };
+});
+
+export const SelfIdentity = styled.div({
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+});
+
+export const SelfLabel = styled.div({
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase',
+  color: '#f8bb73',
+});
+
+export const SelfName = styled.h1({
   margin: 0,
-  overflowWrap: 'anywhere',
   fontFamily: theme.fonts.sans,
   fontSize: 26,
-  fontWeight: 700,
-  letterSpacing: '-0.01em',
-  color: theme.colors.text.primary,
+  fontWeight: 800,
+  letterSpacing: '-0.02em',
+  lineHeight: 1.1,
+  color: '#fff8f5',
+  overflowWrap: 'break-word',
+  wordBreak: 'break-word',
+  [BP.lg]: { fontSize: 24 },
+  [BP.md]: { fontSize: 22 },
+  [BP.sm]: { fontSize: 20 },
 });
 
-export const Role = styled.div({
-  marginTop: 6,
-  fontSize: 12,
-  color: theme.colors.text.muted,
-  textTransform: 'uppercase',
-  letterSpacing: '0.12em',
-  fontWeight: 600,
+export const SelfHandle = styled.div({
+  fontFamily: theme.fonts.mono,
+  fontSize: 13,
+  fontWeight: 500,
+  color: 'rgba(255, 248, 245, 0.7)',
+  letterSpacing: '0.02em',
 });
 
-export const MetaRow = styled.div({
+export const SelfHeroActions = styled.div({
   display: 'flex',
-  gap: 24,
+  gap: 10,
   flexWrap: 'wrap',
-  marginTop: 28,
-  paddingTop: 24,
-  borderTop: `1px solid ${theme.colors.outlineVariant}`,
+  justifyContent: 'flex-end',
+  flexShrink: 0,
+  position: 'relative',
+  [BP.md]: { justifyContent: 'flex-start' },
 });
 
-export const MetaItem = styled.div({
-  display: 'flex',
-  alignItems: 'center',
+export const SelfMetaRow = styled.div({
+  position: 'relative',
+  marginTop: 30,
+  paddingTop: 26,
+  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
   gap: 12,
-  fontSize: 14,
+  [BP.lg]: {
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    marginTop: 24,
+    paddingTop: 22,
+  },
+  [BP.sm]: { gap: 10, marginTop: 18, paddingTop: 16 },
 });
 
-export const MetaIcon = styled.span({
-  width: 36,
-  height: 36,
-  borderRadius: theme.radius.sm,
-  background: theme.colors.primaryFixed,
+export const SelfMetaPill = styled.div({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  minWidth: 0,
+  padding: '16px 18px',
+  borderRadius: theme.radius.md,
+  background: 'rgba(255, 248, 245, 0.06)',
+  border: '1px solid rgba(255, 248, 245, 0.1)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  '.value': {
+    fontFamily: theme.fonts.sans,
+    fontSize: 26,
+    fontWeight: 800,
+    letterSpacing: '-0.02em',
+    lineHeight: 1,
+    color: '#fff8f5',
+    overflowWrap: 'anywhere',
+    fontVariantNumeric: 'tabular-nums',
+  },
+  '.label': {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#f8bb73',
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  [BP.lg]: {
+    padding: '14px 16px',
+  },
+  [BP.sm]: {
+    padding: '12px 14px',
+    '.value': { fontSize: 22 },
+  },
+});
+
+// ─── Self view — account details card ───────────────────────────────────────
+
+export const SelfAccountCard = styled.section({
+  background: theme.colors.bg.card,
+  border: `1px solid ${theme.colors.outlineVariant}`,
+  borderRadius: theme.radius.xl,
+  padding: 8,
+  boxShadow: theme.shadows.soft,
+  overflow: 'hidden',
+});
+
+export const SelfAccountList = styled.ul({
+  listStyle: 'none',
+  margin: 0,
+  padding: 0,
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+export const SelfAccountRow = styled.li({
+  display: 'grid',
+  gridTemplateColumns: '180px minmax(0, 1fr) auto',
+  alignItems: 'center',
+  gap: 16,
+  padding: '16px 18px',
+  borderBottom: `1px solid ${theme.colors.outlineVariant}`,
+  minWidth: 0,
+  '&:last-child': { borderBottom: 'none' },
+  [BP.md]: {
+    gridTemplateColumns: '120px minmax(0, 1fr)',
+    gridTemplateAreas: '"label value" "hint hint"',
+    rowGap: 4,
+  },
+});
+
+export const SelfAccountLabel = styled.div({
   display: 'inline-flex',
   alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 16,
-  color: theme.colors.primary,
+  gap: 8,
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: theme.colors.text.muted,
+  '.anticon': {
+    fontSize: 14,
+    color: theme.colors.primary,
+  },
+  [BP.md]: { gridArea: 'label' },
 });
 
-export const MetaText = styled.span({
+export const SelfAccountValue = styled.div<{ $mono?: boolean }>((props) => ({
+  fontFamily: props.$mono ? theme.fonts.mono : theme.fonts.sans,
+  fontSize: 15,
+  fontWeight: 600,
+  color: theme.colors.text.primary,
+  minWidth: 0,
+  overflowWrap: 'anywhere',
+  wordBreak: 'break-word',
+  [BP.md]: { gridArea: 'value' },
+}));
+
+export const SelfAccountCopy = styled.button({
+  border: `1.5px solid ${theme.colors.outlineVariant}`,
+  background: theme.colors.bg.surfaceLow,
   color: theme.colors.text.secondary,
+  borderRadius: theme.radius.md,
+  height: 32,
+  padding: '0 12px',
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  fontFamily: theme.fonts.sans,
+  transition: theme.transition,
+  flexShrink: 0,
+  '&:hover': { borderColor: theme.colors.primary, color: theme.colors.primary },
+  [BP.md]: { display: 'none' },
+});
+
+// ─── Self view — danger zone ────────────────────────────────────────────────
+
+export const DangerZone = styled.section({
+  marginTop: 4,
+  padding: '18px 22px',
+  borderRadius: theme.radius.lg,
+  background: 'linear-gradient(180deg, #fff8f5 0%, #fbf2ed 100%)',
+  border: `1px dashed ${theme.colors.outlineVariant}`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 16,
+  flexWrap: 'wrap',
+});
+
+export const DangerLabel = styled.div({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
+  minWidth: 0,
+  '.title': {
+    fontSize: 13,
+    fontWeight: 700,
+    color: theme.colors.text.primary,
+  },
+  '.hint': {
+    fontSize: 12,
+    color: theme.colors.text.muted,
+  },
 });
 
 // ─── Mobile FlatFinder shell ──────────────────────────────────────────────────
@@ -188,94 +444,116 @@ export const MobileBody = styled.main({
 });
 
 export const MobileHeroCard = styled.section({
-  background: theme.gradients.primaryHero,
+  position: 'relative',
+  overflow: 'hidden',
+  background: 'linear-gradient(140deg, #1e1b18 0%, #3b2a23 55%, #7a2f12 100%)',
   color: '#fff',
-  borderRadius: 8,
-  padding: '28px 20px',
+  borderRadius: theme.radius.xl,
+  padding: '20px 20px 16px',
   textAlign: 'center',
-  boxShadow: '0 12px 24px rgba(150, 67, 37, 0.2)',
+  boxShadow: '0 16px 32px rgba(30, 27, 24, 0.28)',
   marginBottom: 16,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    background:
+      'radial-gradient(circle at 90% -10%, rgba(255, 187, 115, 0.32), transparent 55%),' +
+      'radial-gradient(circle at 5% 110%, rgba(248, 187, 115, 0.14), transparent 60%)',
+    pointerEvents: 'none',
+  },
 });
 
 export const MobileHeroAvatarWrap = styled.div({
-  display: 'flex',
-  justifyContent: 'center',
-  marginBottom: 14,
+  position: 'relative',
+  marginBottom: 10,
+  width: 64,
+  height: 64,
+  flexShrink: 0,
+  '& .ant-avatar': {
+    flexShrink: 0,
+  },
 });
 
 export const MobileHeroName = styled.h2({
+  position: 'relative',
   margin: 0,
-  overflowWrap: 'anywhere',
-  fontSize: 20,
+  fontSize: 18,
   fontWeight: 800,
+  letterSpacing: '-0.01em',
+  lineHeight: 1.2,
+  color: '#fff8f5',
+  wordBreak: 'keep-all',
+  overflowWrap: 'normal',
+  maxWidth: '100%',
 });
 
 export const MobileHeroRole = styled.div({
-  marginTop: 6,
-  fontSize: 12,
+  position: 'relative',
+  marginTop: 4,
+  fontSize: 11,
   fontWeight: 700,
-  opacity: 0.88,
+  letterSpacing: '0.16em',
   textTransform: 'uppercase',
-  letterSpacing: '0.08em',
+  color: '#f8bb73',
 });
 
 export const MobileStatsGrid = styled.div({
   display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: 12,
+  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+  gap: 8,
   marginBottom: 16,
+  '@media (max-width: 380px)': {
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  },
 });
 
 export const MobileStatCard = styled.div({
   display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  padding: 14,
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: 6,
+  padding: '14px 14px',
   border: `1px solid ${theme.colors.outlineVariant}`,
   background: theme.colors.bg.card,
-  borderRadius: 8,
+  borderRadius: theme.radius.lg,
+  minWidth: 0,
 });
 
-export const MobileStatIcon = styled.span<{ $tone: 'coral' | 'sage' }>((props) => ({
-  width: 38,
-  height: 38,
-  display: 'grid',
-  placeItems: 'center',
-  borderRadius: 8,
-  fontSize: 18,
-  background: props.$tone === 'coral' ? theme.colors.primaryFixed : '#e4eedc',
-  color: props.$tone === 'coral' ? theme.colors.primary : '#4f7a52',
-}));
-
 export const MobileStatValue = styled.div({
-  fontSize: 21,
+  fontSize: 22,
   color: theme.colors.text.primary,
   fontWeight: 800,
-  lineHeight: 1.05,
+  lineHeight: 1,
+  fontVariantNumeric: 'tabular-nums',
 });
 
 export const MobileStatLabel = styled.div({
   color: theme.colors.text.muted,
-  fontSize: 11,
-  fontWeight: 600,
-  marginTop: 3,
+  fontSize: 10,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
 });
 
 export const MobileSectionTitle = styled.h3({
   color: theme.colors.text.primary,
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: 800,
   textTransform: 'uppercase',
-  letterSpacing: '0.06em',
-  margin: '0 0 10px',
+  letterSpacing: '0.12em',
+  margin: '4px 0 10px',
 });
 
 export const MobileAccountCard = styled.section({
   background: theme.colors.bg.card,
   border: `1px solid ${theme.colors.outlineVariant}`,
-  borderRadius: 8,
-  padding: '4px 16px',
-  marginBottom: 20,
+  borderRadius: theme.radius.lg,
+  padding: '2px 16px',
+  marginBottom: 16,
 });
 
 export const MobileAccountRow = styled.div({
@@ -285,6 +563,7 @@ export const MobileAccountRow = styled.div({
   gap: 12,
   padding: '13px 0',
   borderBottom: `1px solid ${theme.colors.outlineVariant}`,
+  minWidth: 0,
   '&:last-child': { borderBottom: 0 },
 });
 
@@ -294,15 +573,17 @@ export const MobileAccountLabel = styled.div({
   gap: 10,
   minWidth: 0,
   color: theme.colors.text.muted,
-  fontSize: 13,
-  fontWeight: 600,
+  fontSize: 12,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
   '.anticon': {
-    fontSize: 15,
+    fontSize: 14,
     color: theme.colors.primary,
   },
 });
 
-export const MobileAccountValue = styled.div({
+export const MobileAccountValue = styled.div<{ $mono?: boolean }>((props) => ({
   minWidth: 0,
   color: theme.colors.text.primary,
   fontSize: 13,
@@ -311,8 +592,9 @@ export const MobileAccountValue = styled.div({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  maxWidth: '58%',
-});
+  maxWidth: '60%',
+  fontFamily: props.$mono ? theme.fonts.mono : theme.fonts.sans,
+}));
 
 export const MobileActionsCol = styled.div({
   display: 'flex',
@@ -323,7 +605,7 @@ export const MobileActionsCol = styled.div({
 export const MobileRefreshBtn = styled.button({
   width: '100%',
   border: `1px solid ${theme.colors.outlineVariant}`,
-  borderRadius: 8,
+  borderRadius: theme.radius.md,
   padding: 14,
   background: theme.colors.bg.card,
   color: theme.colors.text.primary,
@@ -341,7 +623,7 @@ export const MobileRefreshBtn = styled.button({
 export const MobileLogoutBtn = styled.button({
   width: '100%',
   border: 0,
-  borderRadius: 8,
+  borderRadius: theme.radius.md,
   padding: 14,
   background: theme.colors.error,
   color: '#fff',
@@ -361,15 +643,6 @@ export const MobileLogoutBtn = styled.button({
 // hairline grid behind it. The role mark anchors the bottom-right corner.
 // This is NOT another cream-with-rust-gradient hero. Different subject (a
 // teammate, not the user) deserves a different visual register.
-
-const INK = '#1e1b18';
-const SAGE = '#5e7a55';
-
-const BP = {
-  sm: '@media (max-width: 640px)',
-  md: '@media (max-width: 768px)',
-  lg: '@media (max-width: 1024px)',
-};
 
 export const TeammateHero = styled.section({
   position: 'relative',
@@ -400,19 +673,17 @@ export const TeammateHero = styled.section({
 export const HeroTile = styled.div({
   gridArea: 'tile',
   position: 'relative',
-  width: 168,
-  height: 168,
+  width: 140,
+  height: 140,
   background: INK,
   borderRadius: 18,
   display: 'grid',
   placeItems: 'center',
-  // Asymmetric clip — diagonal cut from top-right corner. Signatures this view.
   clipPath: 'polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%)',
-  // A second layer gives a hairline sage edge that survives the clip.
   boxShadow:
     `0 0 0 1px ${SAGE}55, 0 18px 36px rgba(30, 27, 24, 0.18)`,
-  [BP.sm]: { width: 124, height: 124, borderRadius: 14 },
-  '@media (max-width: 380px)': { width: 100, height: 100 },
+  [BP.sm]: { width: 104, height: 104, borderRadius: 14 },
+  '@media (max-width: 380px)': { width: 88, height: 88 },
 });
 
 export const HeroTopo = styled.div({
@@ -420,7 +691,6 @@ export const HeroTopo = styled.div({
   inset: 0,
   pointerEvents: 'none',
   opacity: 0.5,
-  // Subtle topographic linework — subject matter: a flat-hunter maps territory.
   backgroundImage:
     'repeating-linear-gradient(115deg, transparent 0 22px, rgba(150, 67, 37, 0.05) 22px 23px),' +
     'repeating-linear-gradient(25deg, transparent 0 34px, rgba(150, 67, 37, 0.04) 34px 35px)',
@@ -431,16 +701,14 @@ export const HeroTopo = styled.div({
 export const HeroMonogram = styled.span({
   color: '#fff',
   fontFamily: theme.fonts.sans,
-  fontSize: 76,
+  fontSize: 60,
   fontWeight: 800,
   letterSpacing: '-0.04em',
   lineHeight: 1,
   userSelect: 'none',
-  // Tiny offset so the mark sits flush with the visual weight of the tile,
-  // not mathematically centered.
   transform: 'translate(-2px, -2px)',
-  [BP.sm]: { fontSize: 56 },
-  '@media (max-width: 380px)': { fontSize: 44 },
+  [BP.sm]: { fontSize: 44 },
+  '@media (max-width: 380px)': { fontSize: 36 },
 });
 
 export const HeroRoleMark = styled.span<{ $owner?: boolean }>((props) => ({
@@ -478,16 +746,16 @@ export const HeroIdentity = styled.div({
 export const HeroName = styled.h1({
   margin: 0,
   fontFamily: theme.fonts.sans,
-  fontSize: 38,
+  fontSize: 26,
   fontWeight: 800,
-  letterSpacing: '-0.025em',
+  letterSpacing: '-0.02em',
   color: theme.colors.text.primary,
-  lineHeight: 1.05,
-  overflowWrap: 'anywhere',
+  lineHeight: 1.1,
+  overflowWrap: 'break-word',
   wordBreak: 'break-word',
-  [BP.lg]: { fontSize: 34 },
-  [BP.md]: { fontSize: 30 },
-  [BP.sm]: { fontSize: 26 },
+  [BP.lg]: { fontSize: 24 },
+  [BP.md]: { fontSize: 22 },
+  [BP.sm]: { fontSize: 20 },
 });
 
 export const HeroHandle = styled.span({
@@ -661,7 +929,7 @@ export const TeamEntry = styled.button({
   width: '100%',
   textAlign: 'left',
   padding: '18px 22px 18px 26px',
-  marginTop: 20,
+  marginTop: 8,
   background: theme.colors.bg.card,
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',

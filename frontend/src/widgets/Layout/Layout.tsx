@@ -13,7 +13,7 @@ import {
   HomeOutlined, SwapOutlined, SettingFilled, CaretDownOutlined,
 } from '@ant-design/icons';
 import {
-  LayoutWrapper, MainArea, TopBar, TopBarTitle, TopBarActions,
+  LayoutWrapper, MainArea, TopBar, TopBarTitle, TopBarLead, TopBarActions,
   TopBarSearch, TopBarIconBtn, TopBarBadgeWrap, MobileMenuBtn, PageContent, Fab,
   RoomSwitcher, MobileRoomBar, MobileRoomBtn, MobileBellBtn, MobileBellBadgeWrap,
 } from './styled';
@@ -108,12 +108,12 @@ export function Layout() {
       >
         {!isMobile && (
           <TopBar>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <TopBarLead>
               <MobileMenuBtn onClick={() => setCollapsed(false)} aria-label="Меню">
                 <MenuFoldOutlined />
               </MobileMenuBtn>
               <TopBarTitle>{title}</TopBarTitle>
-            </div>
+            </TopBarLead>
             <TopBarActions>
               <TopBarSearch>
                 <SearchOutlined />
@@ -160,7 +160,11 @@ export function Layout() {
                   </TopBarBadgeWrap>
                 </TopBarIconBtn>
               </Dropdown>
-              <TopBarIconBtn type="button" aria-label="Настройки">
+              <TopBarIconBtn
+                type="button"
+                aria-label="Настройки"
+                onClick={() => navigate('/profile')}
+              >
                 <SettingOutlined />
               </TopBarIconBtn>
             </TopBarActions>

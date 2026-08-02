@@ -10,6 +10,7 @@ import { RoomManagePage } from '../../pages/RoomManagePage/RoomManagePage';
 import { DashboardPage } from '../../pages/DashboardPage/DashboardPage';
 import { ApartmentsPage } from '../../pages/ApartmentsPage/ApartmentsPage';
 import { ApartmentDetailPage } from '../../pages/ApartmentDetailPage/ApartmentDetailPage';
+import { ImportPage } from '../../pages/ImportPage/ImportPage';
 import { RemindersPage } from '../../pages/RemindersPage/RemindersPage';
 import { ProfilePage } from '../../pages/ProfilePage/ProfilePage';
 import { TeamPage } from '../../pages/TeamPage/TeamPage';
@@ -28,6 +29,7 @@ export function AppRouter() {
             <Route path="/rooms/manage" element={<RoomManagePage />} />
             <Route path="/apartments" element={<ApartmentsPage />} />
             <Route path="/apartments/:id" element={<ApartmentDetailPage />} />
+            <Route path="/import" element={<ImportPage />} />
             <Route path="/reminders" element={<RemindersPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/users/:id" element={<ProfilePage />} />

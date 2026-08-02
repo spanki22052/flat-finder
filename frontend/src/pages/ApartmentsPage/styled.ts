@@ -1,20 +1,38 @@
-import styled from 'styled-components';
-import { Input, Drawer, Button, Avatar } from 'antd';
+import styled, { keyframes } from 'styled-components';
+import { Input, Drawer, Button, Avatar, Space } from 'antd';
 import { theme } from '../../app/styles/theme';
+
+const fadeInUp = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 export const PageHeader = styled.div({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-start',
   justifyContent: 'space-between',
-  marginBottom: 24,
+  marginBottom: 28,
   flexWrap: 'wrap',
   gap: 16,
 });
 
+export const PageHeaderTitleGroup = styled.div({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+});
+
 export const PageTitle = styled.h1({
-  fontSize: 26,
-  fontWeight: 700,
+  fontSize: 28,
+  fontWeight: 800,
+  letterSpacing: '-0.01em',
   color: theme.colors.text.inverse,
+});
+
+export const PageSubtitle = styled.div({
+  fontSize: 13,
+  fontWeight: 600,
+  color: theme.colors.text.muted,
 });
 
 export const HeaderActions = styled.div({
@@ -37,6 +55,11 @@ export const FiltersRow = styled.div({
   marginBottom: 20,
   flexWrap: 'wrap',
   alignItems: 'center',
+  padding: '12px 16px',
+  background: theme.colors.bg.card,
+  border: `1px solid ${theme.colors.outlineVariant}`,
+  borderRadius: theme.radius.lg,
+  boxShadow: theme.shadows.soft,
   '& > *': {
     flex: '0 0 auto',
   },
@@ -52,16 +75,32 @@ export const FiltersRow = styled.div({
 });
 
 export const SearchInput = styled(Input)({
-  width: 280,
-  maxWidth: 280,
+  width: 300,
+  maxWidth: 300,
+  height: 44,
+  borderRadius: `${theme.radius.pill} !important`,
   '.ant-input': {
     background: `${theme.colors.bg.card} !important`,
-    borderColor: `${theme.colors.outlineVariant} !important`,
   },
   '@media (max-width: 640px)': {
     width: '100%',
     maxWidth: 'none',
   },
+});
+
+export const ResultsBadge = styled.span({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  marginLeft: 'auto',
+  padding: '8px 14px',
+  borderRadius: theme.radius.pill,
+  background: theme.colors.primaryFixed,
+  color: theme.colors.onPrimaryFixedVariant,
+  fontSize: 13,
+  fontWeight: 700,
+  whiteSpace: 'nowrap',
+  '@media (max-width: 640px)': { display: 'none' },
 });
 
 export const ACTION_COL_BG = theme.colors.bg.card;
@@ -75,6 +114,22 @@ export const GlassCard = styled.div({
   borderRadius: theme.radius.xl,
   overflow: 'hidden',
   boxShadow: theme.shadows.card,
+  '.ant-table-thead > tr > th': {
+    fontSize: 12,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: theme.colors.text.muted,
+  },
+  '.ant-table-tbody > tr': {
+    transition: 'background-color 0.15s ease',
+  },
+  '.ant-table-tbody > tr:hover > td': {
+    background: `${theme.colors.bg.surfaceLow} !important`,
+  },
+  '.ant-table-tbody > tr > td': {
+    borderBottom: `1px solid ${theme.colors.bg.glassBorder}`,
+  },
   '.ant-table-cell-fix-right, .ant-table-cell-fix-right-first': {
     zIndex: 5,
     background: `${ACTION_COL_BG} !important`,
@@ -99,24 +154,24 @@ export const GlassCard = styled.div({
     backgroundColor: `${theme.colors.bg.deep} !important`,
   },
   '.ant-pagination': {
-    padding: '12px 24px',
+    padding: '14px 24px',
   },
 });
 
 export const ApartmentRow = styled.div({
   display: 'flex',
   alignItems: 'center',
-  gap: 12,
-  padding: '4px 0',
+  gap: 14,
+  padding: '6px 0',
   '@media (max-width: 640px)': {
     gap: 8,
   },
 });
 
 export const AptThumb = styled.div<{ $status: string }>((props) => ({
-  width: 44,
-  height: 44,
-  borderRadius: 10,
+  width: 52,
+  height: 52,
+  borderRadius: 12,
   flexShrink: 0,
   background: `${props.$status}18`,
   border: `1px solid ${props.$status}30`,
@@ -124,6 +179,9 @@ export const AptThumb = styled.div<{ $status: string }>((props) => ({
   alignItems: 'center',
   justifyContent: 'center',
   fontSize: 18,
+  color: props.$status,
+  overflow: 'hidden',
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   '@media (max-width: 640px)': {
     width: 36,
     height: 36,
@@ -208,10 +266,10 @@ export const AptMeta = styled.div({
 });
 
 export const PriceTag = styled.div({
-  fontSize: 15,
-  fontWeight: 700,
+  fontSize: 16,
+  fontWeight: 800,
   fontFamily: theme.fonts.mono,
-  color: theme.colors.text.muted,
+  color: theme.colors.text.primary,
   whiteSpace: 'nowrap',
   '@media (max-width: 640px)': {
     fontSize: 13,
@@ -224,6 +282,12 @@ export const TagPills = styled.div({
   flexWrap: 'wrap',
   maxWidth: '100%',
   overflow: 'hidden',
+});
+
+export const RowActions = styled(Space)({
+  '.ant-btn': {
+    borderRadius: 8,
+  },
 });
 
 export const DrawerStyled = styled(Drawer)({
@@ -252,8 +316,21 @@ export const SectionTitle = styled.div({
 
 export const EmptyState = styled.div({
   textAlign: 'center',
-  padding: '60px 20px',
+  padding: '72px 20px',
   color: theme.colors.text.muted,
+  fontSize: 14,
+  fontWeight: 600,
+});
+
+export const EmptyIconWrap = styled.div({
+  width: 96,
+  height: 96,
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'radial-gradient(circle, rgba(150, 67, 37, 0.14), rgba(150, 67, 37, 0.03))',
+  margin: '0 auto 16px',
 });
 
 export const ModeSwitchWrapper = styled.div({
@@ -590,13 +667,18 @@ export const MobileList = styled.div({
   gap: 14,
 });
 
-export const MobileApartmentCard = styled.article({
-  overflow: 'hidden',
-  background: theme.colors.bg.card,
-  border: `1px solid ${theme.colors.outlineVariant}`,
-  borderRadius: 8,
-  boxShadow: theme.shadows.card,
-});
+export const MobileApartmentCard = styled.article`
+  overflow: hidden;
+  background: ${theme.colors.bg.card};
+  border: 1px solid ${theme.colors.outlineVariant};
+  border-radius: ${theme.radius.lg};
+  box-shadow: ${theme.shadows.card};
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: ${fadeInUp} 0.3s ease both;
+  &:active {
+    transform: scale(0.99);
+  }
+`;
 
 export const MobileApartmentImage = styled.div<{ $status: string }>((props) => ({
   position: 'relative',
@@ -614,17 +696,19 @@ export const MobileApartmentImage = styled.div<{ $status: string }>((props) => (
   },
 }));
 
-export const MobileStatusBadge = styled.span({
+export const MobileStatusBadge = styled.span<{ $color?: string }>((props) => ({
   position: 'absolute',
   right: 10,
   top: 10,
-  padding: '4px 8px',
-  borderRadius: 6,
+  padding: '4px 10px',
+  borderRadius: theme.radius.pill,
   background: 'rgba(255,255,255,0.92)',
-  color: theme.colors.primary,
+  backdropFilter: 'blur(4px)',
+  color: props.$color ?? theme.colors.primary,
   fontSize: 11,
   fontWeight: 800,
-});
+  boxShadow: '0 2px 8px rgba(30, 27, 24, 0.12)',
+}));
 
 export const MobilePhotoCount = styled.span({
   position: 'absolute',
