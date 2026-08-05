@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: flat-finder-postgres
+    environment:
+      POSTGRES_USER: flatfinder
+      POSTGRES_PASSWORD: flatfinder
+      POSTGRES_DB: flatfinder
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - flat-finder-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U flatfinder']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flat-finder-backend
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DATABASE_URL: postgresql://flatfinder:flatfinder@postgres:5432/flatfinder?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod-please-use-a-long-random-string}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-10}
+      PARSER_PROXY_URL: ${PARSER_PROXY_URL:-}
+      PARSER_HEADLESS: ${PARSER_HEADLESS:-true}
+      PARSER_DOMCLICK_USE_CHROME: ${PARSER_DOMCLICK_USE_CHROME:-true}
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - flat-finder-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: flat-finder-frontend
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
+    networks:
+      - flat-finder-network
+    restart: unless-stopped
+
+networks:
+  flat-finder-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
